@@ -14,7 +14,9 @@
       "Bash(docker rm:*)",
       "Bash(curl:*)",
       "Bash(uv sync:*)",
-      "Bash(sh:*)"
+      "Bash(sh:*)",
+      "Bash(export PATH=\"$HOME/.local/bin:$PATH\")",
+      "Bash(uv run:*)"
     ],
     "deny": [],
     "ask": []

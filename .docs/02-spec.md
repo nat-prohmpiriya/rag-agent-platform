@@ -39,7 +39,7 @@
 
 | Layer | Technology | Reason |
 |-------|------------|--------|
-| **Frontend** | SvelteKit (Static) | เร็ว, รวม container เดียวกับ backend |
+| **Frontend** | SvelteKit + Svelte 5 + Tailwind v4 + shadcn-svelte | Enterprise-ready UI, White-label support |
 | **Backend** | FastAPI (Python) | Async, เหมาะกับ AI/ML, first-class Python |
 | **LLM Gateway** | LiteLLM (Library + Proxy) | Unified API, multi-provider, Admin UI |
 | **Vector Store** | ChromaDB | Embedded, ง่าย, lightweight |
