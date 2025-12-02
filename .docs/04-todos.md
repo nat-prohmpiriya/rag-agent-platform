@@ -17,11 +17,11 @@
 |-----------|--------|-------|
 | LiteLLM Proxy | ✅ Done | Running on port 4000, UI available |
 | Frontend (SvelteKit) | 🟡 In Progress | Svelte 5 + Tailwind v4 + shadcn-svelte |
-| Backend (FastAPI) | 🟡 In Progress | Basic structure created |
+| Backend (FastAPI) | 🟡 In Progress | Auth + Chat API done |
 | PostgreSQL | ✅ Done | Running in docker |
 | Redis | ✅ Done | Running for LiteLLM cache |
 | ChromaDB | ❌ Not Started | - |
-| Auth System | ❌ Not Started | - |
+| Auth System | ✅ Done | JWT + refresh token |
 | RAG Pipeline | ❌ Not Started | - |
 | PII Protection | ❌ Not Started | Presidio integration |
 | Agent System | ❌ Not Started | - |
@@ -50,19 +50,19 @@
 - [x] Create health check endpoint
 - [x] Setup database connection (SQLAlchemy async + PostgreSQL)
 - [x] Create Alembic migrations setup
-- [ ] Create base database models (User, Project, Conversation)
+- [x] Create base database models (User, Project, Conversation)
 - [x] Setup environment configuration (pydantic-settings)
 
 ### 1.3 Authentication System
-- [ ] Create User model & schema
-- [ ] Implement password hashing (bcrypt)
-- [ ] Create JWT token utilities
-- [ ] Implement register endpoint
-- [ ] Implement login endpoint
-- [ ] Implement logout endpoint
-- [ ] Create auth middleware
-- [ ] Implement /me endpoint (get current user)
-- [ ] Add refresh token support
+- [x] Create User model & schema
+- [x] Implement password hashing (bcrypt)
+- [x] Create JWT token utilities
+- [x] Implement register endpoint
+- [x] Implement login endpoint
+- [x] Implement logout endpoint
+- [x] Create auth middleware
+- [x] Implement /me endpoint (get current user)
+- [x] Add refresh token support
 
 ### 1.4 Frontend Setup (SvelteKit)
 - [x] Initialize SvelteKit project
@@ -77,18 +77,18 @@
 - [x] Create auth store (Svelte stores with runes)
 - [x] Implement login page
 - [x] Implement register page
-- [ ] Add protected route logic
+- [x] Add protected route logic
 
 ### 1.5 Basic Chat Integration
-- [ ] Create LiteLLM client wrapper in backend
-- [ ] Implement /chat endpoint (non-streaming)
-- [ ] Implement /chat/stream endpoint (SSE streaming)
-- [ ] Create ChatWindow component
-- [ ] Implement message input component
-- [ ] Implement message display (markdown support)
+- [x] Create LiteLLM client wrapper in backend
+- [x] Implement /chat endpoint (non-streaming)
+- [x] Implement /chat/stream endpoint (SSE streaming)
+- [x] Create ChatWindow component
+- [x] Implement message input component
+- [x] Implement message display (markdown support)
 - [ ] Add code syntax highlighting
-- [ ] Connect frontend to backend chat API
-- [ ] Test end-to-end chat flow
+- [x] Connect frontend to backend chat API
+- [x] Test end-to-end chat flow
 
 **Phase 1 Deliverable**: User can register, login, and chat with AI
 
@@ -371,7 +371,7 @@
 8. **Phase 8** - Polish (Production-ready)
 
 ### Current Focus
-> **Next Step**: Complete Phase 1.3 (Authentication System)
+> **Next Step**: Phase 2 (RAG Core) - Setup ChromaDB and document processing
 
 ### Blockers
 - None currently

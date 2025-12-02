@@ -1,5 +1,5 @@
 from sqlalchemy import Boolean, String
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
 from app.models.base import TimestampMixin
@@ -26,5 +26,20 @@ class User(Base, TimestampMixin):
     # Tier (Free, Pro, Enterprise)
     tier: Mapped[str] = mapped_column(String(20), default="free")
 
+    # Relationships
+    projects: Mapped[list["Project"]] = relationship(
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+    conversations: Mapped[list["Conversation"]] = relationship(
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+
     def __repr__(self) -> str:
         return f"<User(id={self.id}, email={self.email})>"
+
+
+# Import at the end to avoid circular imports
+from app.models.project import Project  # noqa: E402, F401
+from app.models.conversation import Conversation  # noqa: E402, F401
