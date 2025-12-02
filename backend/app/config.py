@@ -31,6 +31,15 @@ class Settings(BaseSettings):
     # CORS
     cors_origins: list[str] = ["http://localhost:5173", "http://localhost:3000"]
 
+    # OpenTelemetry
+    otel_enabled: bool = False  # Enable when Jaeger is running
+    otel_service_name: str = "rag-agent-backend"
+    otel_exporter_endpoint: str = "http://localhost:4317"
+
+    # Redis (for rate limiting, shared with LiteLLM)
+    redis_host: str = "localhost"
+    redis_port: int = 6379
+
     @property
     def is_development(self) -> bool:
         return self.app_env == "development"

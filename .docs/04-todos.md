@@ -16,7 +16,7 @@
 | Component | Status | Notes |
 |-----------|--------|-------|
 | LiteLLM Proxy | ✅ Done | Running on port 4000, UI available |
-| Frontend (SvelteKit) | 🟡 Skeleton | Svelte 5 + Tailwind v4 + Paraglide |
+| Frontend (SvelteKit) | 🟡 In Progress | Svelte 5 + Tailwind v4 + shadcn-svelte |
 | Backend (FastAPI) | 🟡 In Progress | Basic structure created |
 | PostgreSQL | ✅ Done | Running in docker |
 | Redis | ✅ Done | Running for LiteLLM cache |
@@ -68,15 +68,15 @@
 - [x] Initialize SvelteKit project
 - [x] Setup Tailwind CSS v4
 - [x] Setup i18n (Paraglide)
-- [ ] Initialize shadcn-svelte
-- [ ] Add base UI components (Button, Card, Input, Dialog)
-- [ ] Create base layout component
-- [ ] Create navigation/header component
-- [ ] Create sidebar component
-- [ ] Setup API client (fetch wrapper)
-- [ ] Create auth store (Svelte stores with runes)
-- [ ] Implement login page
-- [ ] Implement register page
+- [x] Initialize shadcn-svelte
+- [x] Add base UI components (Button, Card, Input, Dialog)
+- [x] Create base layout component
+- [x] Create navigation/header component
+- [x] Create sidebar component
+- [x] Setup API client (fetch wrapper)
+- [x] Create auth store (Svelte stores with runes)
+- [x] Implement login page
+- [x] Implement register page
 - [ ] Add protected route logic
 
 ### 1.5 Basic Chat Integration

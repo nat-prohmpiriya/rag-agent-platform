@@ -1,10 +1,26 @@
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.config import settings
+from app.core.context import get_context
 from app.core.exceptions import AppException
+from app.core.telemetry import instrument_app, setup_telemetry
+from app.middleware import TraceContextMiddleware
 from app.routes import auth, health
+from app.schemas.base import ErrorResponse
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Application lifespan handler."""
+    # Startup
+    setup_telemetry()
+    yield
+    # Shutdown (cleanup if needed)
+
 
 app = FastAPI(
     title=settings.app_name,
@@ -12,7 +28,14 @@ app = FastAPI(
     version="0.1.0",
     docs_url="/docs" if settings.is_development else None,
     redoc_url="/redoc" if settings.is_development else None,
+    lifespan=lifespan,
 )
+
+# Instrument with OpenTelemetry (must be before other middleware)
+instrument_app(app)
+
+# Trace Context Middleware (creates RequestContext per request)
+app.add_middleware(TraceContextMiddleware)
 
 # CORS Middleware
 app.add_middleware(
@@ -27,9 +50,14 @@ app.add_middleware(
 # Exception Handlers
 @app.exception_handler(AppException)
 async def app_exception_handler(request: Request, exc: AppException) -> JSONResponse:
+    ctx = get_context()
     return JSONResponse(
         status_code=exc.status_code,
-        content={"detail": exc.message},
+        content=ErrorResponse(
+            trace_id=ctx.trace_id,
+            error=exc.__class__.__name__,
+            detail=exc.message,
+        ).model_dump(),
     )
 
 
