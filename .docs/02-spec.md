@@ -77,6 +77,46 @@
 | **SQL Review** | User Confirmation UI | ให้ user ยืนยันก่อน execute |
 | **Safe Execution** | Read-only sandbox | Execute อย่างปลอดภัย |
 
+### Observability Stack ⭐ NEW
+
+| Component | Technology | Purpose |
+|-----------|------------|---------|
+| **Tracing** | OpenTelemetry SDK | Distributed tracing |
+| **Trace Backend** | Jaeger | Trace visualization (port 16686) |
+| **Metrics** | Prometheus | Backend API metrics |
+| **Logging** | ❌ ไม่ใช้แยก | ใช้ Trace แทน Log |
+| **Context** | RequestContext | user_id, trace_id per request |
+| **Response** | BaseResponse[T] | trace_id ในทุก response |
+
+**Design Decisions:**
+- ใช้ Trace แทน Log → ลด complexity, ได้ timing + flow ด้วย
+- `@traced()` decorator → track input/output ทุก function
+- trace_id ใน response body → dev เห็นง่าย, debug สะดวก
+
+### Testing Stack ⭐ NEW
+
+| Component | Technology | Purpose |
+|-----------|------------|---------|
+| **Test Framework** | pytest + pytest-asyncio | Async test support |
+| **Fixtures** | Factory Boy | Test data generation |
+| **Coverage** | pytest-cov | Coverage report (target >80%) |
+| **API Testing** | httpx + TestClient | Integration tests |
+| **Mocking** | pytest-mock | External service mocking |
+
+**Test Strategy:**
+- Unit tests: Services, Utils (fast, isolated)
+- Integration tests: API endpoints (with test DB)
+- Coverage target: >80%
+
+### Security Stack ⭐ NEW
+
+| Component | Technology | Purpose |
+|-----------|------------|---------|
+| **Rate Limiting** | slowapi | Per-user/IP rate limiting |
+| **Input Validation** | Pydantic v2 | Request validation |
+| **Auth** | JWT + Refresh Token | Authentication |
+| **PII Protection** | Presidio | Data privacy |
+
 ### DevOps & Infrastructure
 
 | Component | Technology |
@@ -935,7 +975,9 @@ rag-agent-platform/
 │   │   │   ├── config.py
 │   │   │   ├── security.py
 │   │   │   ├── database.py
-│   │   │   └── llm_client.py
+│   │   │   ├── llm_client.py
+│   │   │   ├── telemetry.py        # ⭐ NEW - OTEL setup, @traced decorator
+│   │   │   └── context.py          # ⭐ NEW - RequestContext
 │   │   │
 │   │   ├── privacy/                    # ⭐ NEW v3
 │   │   │   ├── __init__.py
@@ -943,6 +985,10 @@ rag-agent-platform/
 │   │   │   ├── thai_recognizers.py     # Thai PII patterns
 │   │   │   ├── audit_logger.py         # PII audit logging
 │   │   │   └── middleware.py           # Auto-scrub middleware
+│   │   │
+│   │   ├── middleware/                  # ⭐ NEW
+│   │   │   ├── __init__.py
+│   │   │   └── trace.py                 # Create RequestContext per request
 │   │   │
 │   │   ├── models/
 │   │   │   ├── user.py

@@ -61,6 +61,8 @@ frontend/
 | `$: doubled = count * 2` | `let doubled = $derived(count * 2)` |
 | `$: { console.log(count) }` | `$effect(() => { console.log(count) })` |
 | `export let name` | `let { name } = $props()` |
+| `<slot />` | `{@render children()}` (Snippets) |
+| `createEventDispatcher` | Callback props (`onclick={() => handler()}`) |
 
 ### State Management
 
@@ -96,6 +98,47 @@ frontend/
 </script>
 
 <button onclick={() => onSubmit(formData)}>Submit</button>
+```
+
+### Component Composition (Snippets)
+
+**IMPORTANT:** Do NOT use `<slot />` - it is deprecated in Svelte 5. Use Snippets instead.
+
+```svelte
+<!-- Parent component defining snippet slots -->
+<script lang="ts">
+  import type { Snippet } from 'svelte';
+
+  let { children, header } = $props<{
+    children: Snippet;
+    header?: Snippet;
+  }>();
+</script>
+
+<div class="card">
+  {#if header}
+    <header class="card-header">
+      {@render header()}
+    </header>
+  {/if}
+  <main class="card-body">
+    {@render children()}
+  </main>
+</div>
+```
+
+```svelte
+<!-- Using the component with snippets -->
+<script lang="ts">
+  import Card from './Card.svelte';
+</script>
+
+<Card>
+  {#snippet header()}
+    <h2>Card Title</h2>
+  {/snippet}
+  <p>This is the card body content.</p>
+</Card>
 ```
 
 ---
@@ -151,6 +194,97 @@ npx shadcn-svelte@latest add table
 |----------|---------|
 | `src/lib/components/ui/` | shadcn-svelte base components |
 | `src/lib/components/custom/` | Business-specific components (ChatWindow, DocumentViewer, etc.) |
+
+### PII & Privacy UI
+
+When rendering text with PII placeholders from the backend (e.g., `[PERSON]`, `[PHONE]`, `[EMAIL]`), apply distinct visual styles to indicate redacted data.
+
+```svelte
+<!-- src/lib/components/custom/PIIBadge.svelte -->
+<script lang="ts">
+  let { type, index } = $props<{
+    type: 'PERSON' | 'PHONE' | 'EMAIL' | 'ADDRESS' | 'ID';
+    index?: number;
+  }>();
+
+  const colors: Record<string, string> = {
+    PERSON: 'bg-amber-100 text-amber-800 border-amber-300',
+    PHONE: 'bg-blue-100 text-blue-800 border-blue-300',
+    EMAIL: 'bg-green-100 text-green-800 border-green-300',
+    ADDRESS: 'bg-purple-100 text-purple-800 border-purple-300',
+    ID: 'bg-red-100 text-red-800 border-red-300',
+  };
+</script>
+
+<span
+  class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border {colors[type]}"
+  title="Redacted for privacy"
+>
+  [{type}{index ? `_${index}` : ''}]
+</span>
+```
+
+Use regex to detect and replace PII placeholders in chat responses:
+
+```typescript
+// src/lib/utils/pii.ts
+export function parsePIIPlaceholders(text: string): (string | PIIToken)[] {
+  const regex = /\[(PERSON|PHONE|EMAIL|ADDRESS|ID)(?:_(\d+))?\]/g;
+  // ... parse and return array of strings and PIIToken objects
+}
+```
+
+### SQL Review Component
+
+For the Text-to-SQL feature, create a confirmation UI before executing queries:
+
+```svelte
+<!-- src/lib/components/custom/SQLReviewCard.svelte -->
+<script lang="ts">
+  import { Button } from '$lib/components/ui/button';
+  import * as Card from '$lib/components/ui/card';
+  import { highlightSQL } from '$lib/utils/highlight'; // shiki
+
+  let { sql, estimatedRows, onExecute, onEdit } = $props<{
+    sql: string;
+    estimatedRows?: number;
+    onExecute: () => void;
+    onEdit: () => void;
+  }>();
+
+  let isExecuting = $state(false);
+</script>
+
+<Card.Root class="border-amber-200 bg-amber-50">
+  <Card.Header>
+    <Card.Title class="flex items-center gap-2">
+      <span>Review Generated SQL</span>
+      {#if estimatedRows}
+        <span class="text-sm font-normal text-muted-foreground">
+          ~{estimatedRows} rows
+        </span>
+      {/if}
+    </Card.Title>
+  </Card.Header>
+  <Card.Content>
+    <pre class="p-4 rounded-lg bg-slate-900 text-sm overflow-x-auto">
+      {@html highlightSQL(sql)}
+    </pre>
+  </Card.Content>
+  <Card.Footer class="flex gap-2 justify-end">
+    <Button variant="outline" onclick={onEdit}>Edit SQL</Button>
+    <Button
+      variant="default"
+      onclick={onExecute}
+      disabled={isExecuting}
+    >
+      {isExecuting ? 'Executing...' : 'Execute Query'}
+    </Button>
+  </Card.Footer>
+</Card.Root>
+```
+
+**Important:** Never auto-execute SQL. Always wait for explicit user confirmation.
 
 ---
 
@@ -287,6 +421,75 @@ npx shadcn-svelte@latest add table
 
 ---
 
+## RAG Specific Components
+
+### Markdown & Math Rendering
+
+Since this is a scientific RAG application, responses will contain Markdown and LaTeX.
+
+| Library | Purpose |
+|---------|---------|
+| `svelte-exmarkdown` | Markdown rendering (Svelte 5 compatible) |
+| `katex` | LaTeX math equation rendering |
+| `shiki` | Syntax highlighting for code blocks |
+
+```svelte
+<script lang="ts">
+  import Markdown from 'svelte-exmarkdown';
+  import { gfmPlugin } from 'svelte-exmarkdown/gfm';
+  import { mathPlugin } from './plugins/math'; // KaTeX integration
+
+  let { content } = $props<{ content: string }>();
+
+  const plugins = [gfmPlugin(), mathPlugin()];
+</script>
+
+<Markdown md={content} {plugins} />
+```
+
+### Chat Stream Handling
+
+For RAG responses, **NEVER** wait for the full response. Use **Server-Sent Events (SSE)** or **ReadableStream**.
+
+```svelte
+<script lang="ts">
+  let messages = $state<Message[]>([]);
+  let currentResponse = $state('');
+  let isStreaming = $state(false);
+
+  async function handleChatSubmit(userMessage: string) {
+    // Add user message
+    messages.push({ role: 'user', content: userMessage });
+    isStreaming = true;
+    currentResponse = '';
+
+    const response = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: userMessage }),
+    });
+
+    const reader = response.body?.getReader();
+    const decoder = new TextDecoder();
+
+    if (!reader) return;
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      currentResponse += decoder.decode(value, { stream: true });
+    }
+
+    // Finalize message
+    messages.push({ role: 'assistant', content: currentResponse });
+    currentResponse = '';
+    isStreaming = false;
+  }
+</script>
+```
+
+---
+
 ## API Integration
 
 ### Backend Connection
@@ -335,6 +538,167 @@ export const api = {
     get: (id: string) => fetchApi<Project>(`/projects/${id}`),
   },
 };
+```
+
+### Streaming API Client
+
+For chat and RAG endpoints that stream responses:
+
+```typescript
+// src/lib/api/stream.ts
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
+export async function fetchStream(
+  endpoint: string,
+  options: RequestInit,
+  onChunk: (chunk: string) => void
+): Promise<void> {
+  const token = getStoredToken();
+
+  const response = await fetch(`${API_BASE}${endpoint}`, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token && { Authorization: `Bearer ${token}` }),
+      ...options?.headers,
+    },
+  });
+
+  if (!response.ok) {
+    throw new ApiError(response.status, await response.text());
+  }
+
+  const reader = response.body?.getReader();
+  const decoder = new TextDecoder();
+
+  if (!reader) {
+    throw new Error('Response body is not readable');
+  }
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    onChunk(decoder.decode(value, { stream: true }));
+  }
+}
+
+// Usage
+await fetchStream(
+  '/chat/completions',
+  { method: 'POST', body: JSON.stringify({ message: 'Hello' }) },
+  (chunk) => {
+    currentMessage += chunk;
+  }
+);
+```
+
+### Type Generation from Backend
+
+Use `openapi-typescript` to generate TypeScript types from FastAPI's OpenAPI schema:
+
+```bash
+# Generate types from backend OpenAPI schema
+npx openapi-typescript http://localhost:8000/openapi.json -o src/lib/types/api.d.ts
+```
+
+Add to `package.json` scripts:
+
+```json
+{
+  "scripts": {
+    "generate:types": "openapi-typescript http://localhost:8000/openapi.json -o src/lib/types/api.d.ts"
+  }
+}
+```
+
+### Polling Pattern for Long-Running Tasks
+
+For tasks like fine-tuning jobs that take time to complete, implement polling with exponential backoff:
+
+```typescript
+// src/lib/stores/jobStatus.ts
+import { writable } from 'svelte/store';
+
+interface JobState {
+  id: string;
+  status: 'pending' | 'running' | 'completed' | 'failed';
+  progress?: number;
+  result?: unknown;
+  error?: string;
+}
+
+export function createJobPoller(jobId: string) {
+  const store = writable<JobState>({
+    id: jobId,
+    status: 'pending',
+  });
+
+  let timeoutId: ReturnType<typeof setTimeout>;
+  let attempt = 0;
+  const maxAttempts = 100;
+  const baseDelay = 1000; // 1 second
+  const maxDelay = 30000; // 30 seconds
+
+  async function poll() {
+    try {
+      const response = await fetchApi<JobState>(`/finetune/jobs/${jobId}`);
+      store.set(response);
+
+      if (response.status === 'completed' || response.status === 'failed') {
+        return; // Stop polling
+      }
+
+      // Exponential backoff: 1s, 2s, 4s, 8s... max 30s
+      const delay = Math.min(baseDelay * Math.pow(2, attempt), maxDelay);
+      attempt++;
+
+      if (attempt < maxAttempts) {
+        timeoutId = setTimeout(poll, delay);
+      }
+    } catch (error) {
+      store.update((s) => ({ ...s, status: 'failed', error: String(error) }));
+    }
+  }
+
+  function start() {
+    attempt = 0;
+    poll();
+  }
+
+  function stop() {
+    clearTimeout(timeoutId);
+  }
+
+  return {
+    subscribe: store.subscribe,
+    start,
+    stop,
+  };
+}
+```
+
+Usage in component:
+
+```svelte
+<script lang="ts">
+  import { createJobPoller } from '$lib/stores/jobStatus';
+  import { onDestroy } from 'svelte';
+
+  let { jobId } = $props<{ jobId: string }>();
+
+  const poller = createJobPoller(jobId);
+  poller.start();
+
+  onDestroy(() => poller.stop());
+</script>
+
+{#if $poller.status === 'running'}
+  <ProgressBar value={$poller.progress} />
+{:else if $poller.status === 'completed'}
+  <SuccessMessage result={$poller.result} />
+{:else if $poller.status === 'failed'}
+  <ErrorMessage error={$poller.error} />
+{/if}
 ```
 
 ---

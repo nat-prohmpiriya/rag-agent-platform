@@ -16,7 +16,8 @@
       "Bash(uv sync:*)",
       "Bash(sh:*)",
       "Bash(export PATH=\"$HOME/.local/bin:$PATH\")",
-      "Bash(uv run:*)"
+      "Bash(uv run:*)",
+      "Bash(kill:*)"
     ],
     "deny": [],
     "ask": []
