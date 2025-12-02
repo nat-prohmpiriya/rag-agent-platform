@@ -74,14 +74,16 @@ Blockers:
    - Close: `gh issue close <number>`
    - Update `.docs/04-todos.md`: change `- [ ]` to `- [x]`
    - Update "Current Progress Overview" table if needed
-5. Show summary of all changes
+5. Verify GitHub Project status updated: `gh project item-list <project-number> --owner @me --format json`
+6. Show summary of all changes including Project board status
 
 ### 6b. "close <number>" - Close specific issue
 1. Close the issue: `gh issue close <number>`
 2. Read `.docs/04-todos.md` and find matching todo item (by keyword matching with issue title)
 3. If found, update `- [ ]` to `- [x]`
 4. Update "Current Progress Overview" table if needed (change status emoji)
-5. Show confirmation with what was updated
+5. Verify GitHub Project status: `gh project item-list <project-number> --owner @me --format json`
+6. Show confirmation with what was updated (including Project board status)
 
 ### 7. "list"
 Run: `gh issue list --state open`

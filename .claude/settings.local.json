@@ -28,7 +28,21 @@
       "Bash(gh auth refresh:*)",
       "Bash(gh project:*)",
       "Bash(gh issue list:*)",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(docker ps:*)",
+      "Bash(python3:*)",
+      "Bash(ACCESS_TOKEN=\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzIiwiZXhwIjoxNzY0NjYxNTc0LCJ0eXBlIjoiYWNjZXNzIn0.6Ziq3RNist3TIHAlopWimYW0eh994KDuGVh5ulXuOik\")",
+      "Bash(xargs -I {} sh -c 'echo \"\"\"\"=== {} ===\"\"\"\"; docker exec {} env 2>/dev/null | grep -E \"\"\"\"POSTGRES|DATABASE\"\"\"\" || echo \"\"\"\"No PostgreSQL env vars\"\"\"\"')",
+      "Bash(git add:*)",
+      "Bash(.docs/04-todos.md )",
+      "Bash(backend/alembic/env.py )",
+      "Bash(backend/alembic/versions/32f4a7baf3a2_add_project_conversation_message_tables.py )",
+      "Bash(backend/app/models/__init__.py )",
+      "Bash(backend/app/models/user.py )",
+      "Bash(backend/app/models/project.py )",
+      "Bash(backend/app/models/conversation.py )",
+      "Bash(backend/app/models/message.py)",
+      "Bash(git commit:*)"
     ],
     "deny": [],
     "ask": []
