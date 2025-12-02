@@ -22,6 +22,8 @@
 | Redis | ✅ Done | Running for LiteLLM cache |
 | ChromaDB | ❌ Not Started | - |
 | Auth System | ✅ Done | JWT + refresh token |
+| Chat System | ✅ Done | Streaming, History, Settings, Markdown |
+| Conversation API | ✅ Done | CRUD + Messages |
 | RAG Pipeline | ❌ Not Started | - |
 | PII Protection | ❌ Not Started | Presidio integration |
 | Agent System | ❌ Not Started | - |
@@ -97,6 +99,25 @@
 - [x] Add max tokens input (optional, 100-4096)
 - [x] Integrate settings with chat API request
 - [x] Test model switching and parameter changes
+
+### 1.7 Chat History & Sidebar (Frontend)
+- [x] Create conversations API client
+- [x] Create ChatHistorySidebar component (grouped by date)
+- [x] Create ChatLayout wrapper component
+- [x] Add /chat route (new chat)
+- [x] Add /chat/[id] route (chat detail)
+- [x] Implement collapsible main sidebar with tooltips
+- [x] Add sidebar state persistence (localStorage)
+- [x] Implement streaming performance optimization (throttled scroll)
+- [x] Add markdown rendering for assistant messages
+
+### 1.8 Chat Enhancements (Backlog)
+- [ ] Auto-generate conversation title from first message
+- [ ] Add code syntax highlighting (Prism.js/Shiki)
+- [ ] Add system prompt per conversation (instruction/personality)
+- [ ] Show message timestamps in UI
+- [ ] Add message copy button
+- [ ] Add regenerate response button
 
 **Phase 1 Deliverable**: User can register, login, and chat with AI
 
@@ -253,10 +274,10 @@
 - [ ] Add per-project database connections
 
 ### 6.2 Conversation Management
-- [ ] Create Conversation model
-- [ ] Create Message model
-- [ ] Implement conversation CRUD API
-- [ ] Add conversation history retrieval
+- [x] Create Conversation model
+- [x] Create Message model
+- [x] Implement conversation CRUD API
+- [x] Add conversation history retrieval
 - [ ] Implement context window management
 - [ ] Add conversation summarization (for long chats)
 
@@ -379,6 +400,7 @@
 8. **Phase 8** - Polish (Production-ready)
 
 ### Current Focus
+> **Phase 1 Complete!** Chat system fully functional with history, streaming, markdown.
 > **Next Step**: Phase 2 (RAG Core) - Setup ChromaDB and document processing
 
 ### Blockers
@@ -386,5 +408,5 @@
 
 ---
 
-*Last updated: December 2024*
+*Last updated: December 2, 2024*
 *Synced with spec v3.0*

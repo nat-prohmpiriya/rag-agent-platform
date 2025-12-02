@@ -42,7 +42,20 @@
       "Bash(backend/app/models/project.py )",
       "Bash(backend/app/models/conversation.py )",
       "Bash(backend/app/models/message.py)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(frontend/src/lib/api/chat.ts )",
+      "Bash(frontend/src/lib/api/conversations.ts )",
+      "Bash(frontend/src/lib/components/chat/ )",
+      "Bash(frontend/src/lib/components/layout/AppLayout.svelte )",
+      "Bash(frontend/src/lib/components/layout/Sidebar.svelte )",
+      "Bash(frontend/src/lib/components/llm-chat/LLMChat.svelte )",
+      "Bash(frontend/src/lib/components/ui/tooltip/ )",
+      "Bash(frontend/src/lib/stores/index.ts )",
+      "Bash(frontend/src/lib/stores/sidebar.svelte.ts )",
+      "Bash(frontend/src/routes/\\(app\\)/chat/+page.svelte )",
+      "Bash(\"frontend/src/routes/(app)/chat/[id]/\")",
+      "Bash(cat:*)",
+      "Bash(ACCESS_TOKEN=\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMzhiNTZlYy0yY2Y2LTRmZTAtYjk1NS0xNWNkYTY1NmQyY2UiLCJleHAiOjE3NjQ2ODQ1MjksInR5cGUiOiJhY2Nlc3MifQ.Rrc_j3NTemY9cn92WN6oloxVllkG6UZc0OlcBOEUI_0\")"
     ],
     "deny": [],
     "ask": []
