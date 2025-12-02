@@ -18,6 +18,8 @@ class ChatRequest(BaseModel):
     frequency_penalty: float = Field(default=0.0, ge=0.0, le=2.0)
     presence_penalty: float = Field(default=0.0, ge=0.0, le=2.0)
     stream: bool = False
+    use_rag: bool = Field(default=False, description="Enable RAG to use uploaded documents")
+    rag_top_k: int = Field(default=5, ge=1, le=20, description="Number of document chunks to retrieve")
 
     model_config = ConfigDict(
         json_schema_extra={
@@ -28,6 +30,8 @@ class ChatRequest(BaseModel):
                 "max_tokens": 4096,
                 "top_p": 1.0,
                 "stream": False,
+                "use_rag": False,
+                "rag_top_k": 5,
             }
         }
     )
@@ -53,6 +57,16 @@ class UsageInfo(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
 
+class SourceInfo(BaseModel):
+    """Source document information for RAG responses."""
+
+    document_id: str
+    filename: str
+    relevance_score: float = Field(description="Similarity score (0-1, higher is better)")
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class ChatResponse(BaseModel):
     """Chat response schema (non-streaming)."""
 
@@ -60,6 +74,7 @@ class ChatResponse(BaseModel):
     model: str
     usage: UsageInfo | None = None
     conversation_id: uuid.UUID | None = None
+    sources: list[SourceInfo] | None = None
 
     model_config = ConfigDict(from_attributes=True)
 

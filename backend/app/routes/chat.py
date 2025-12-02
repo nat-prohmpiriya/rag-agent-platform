@@ -16,8 +16,9 @@ from app.models.user import User
 from app.providers.llm import ChatMessage as LLMChatMessage
 from app.providers.llm import llm_client
 from app.schemas.base import BaseResponse
-from app.schemas.chat import ChatMessage, ChatRequest, ChatResponse, UsageInfo
+from app.schemas.chat import ChatMessage, ChatRequest, ChatResponse, SourceInfo, UsageInfo
 from app.services import conversation as conversation_service
+from app.services import rag as rag_service
 from app.services.models import fetch_models_from_litellm
 
 logger = logging.getLogger(__name__)
@@ -182,6 +183,37 @@ async def chat(
         messages = messages[:-1]
         messages.append(LLMChatMessage(role="user", content=data.message))
 
+        # RAG: Retrieve context and build system prompt if enabled
+        sources: list[SourceInfo] | None = None
+        if data.use_rag:
+            chunks = await rag_service.retrieve_context(
+                db=db,
+                query=data.message,
+                user_id=current_user.id,
+                top_k=data.rag_top_k,
+            )
+            if chunks:
+                # Build RAG system prompt
+                rag_prompt = await rag_service.build_rag_prompt(db, chunks)
+                # Prepend system message
+                messages.insert(0, LLMChatMessage(role="system", content=rag_prompt))
+                # Fetch document names for sources
+                from sqlalchemy import select
+                from app.models.document import Document
+                document_ids = list(set(chunk.document_id for chunk in chunks))
+                stmt = select(Document.id, Document.filename).where(Document.id.in_(document_ids))
+                result = await db.execute(stmt)
+                doc_names = {row.id: row.filename for row in result.all()}
+                # Build sources list
+                sources = [
+                    SourceInfo(
+                        document_id=str(info["document_id"]),
+                        filename=info["filename"],
+                        relevance_score=info["relevance_score"],
+                    )
+                    for info in rag_service.format_sources(chunks, doc_names)
+                ]
+
         # Call LLM with user_id for usage tracking
         response = await llm_client.chat_completion(
             messages=messages,
@@ -215,6 +247,7 @@ async def chat(
             model=response.model,
             usage=usage_info,
             conversation_id=conversation_id,
+            sources=sources,
         )
 
         return BaseResponse(
@@ -277,6 +310,30 @@ async def chat_stream(
     messages = messages[:-1]
     messages.append(LLMChatMessage(role="user", content=data.message))
 
+    # RAG: Retrieve context and build system prompt if enabled
+    sources_data: list[dict] | None = None
+    if data.use_rag:
+        chunks = await rag_service.retrieve_context(
+            db=db,
+            query=data.message,
+            user_id=current_user.id,
+            top_k=data.rag_top_k,
+        )
+        if chunks:
+            # Build RAG system prompt
+            rag_prompt = await rag_service.build_rag_prompt(db, chunks)
+            # Prepend system message
+            messages.insert(0, LLMChatMessage(role="system", content=rag_prompt))
+            # Fetch document names for sources
+            from sqlalchemy import select
+            from app.models.document import Document
+            document_ids = list(set(chunk.document_id for chunk in chunks))
+            stmt = select(Document.id, Document.filename).where(Document.id.in_(document_ids))
+            result = await db.execute(stmt)
+            doc_names = {row.id: row.filename for row in result.all()}
+            # Build sources list for streaming response
+            sources_data = rag_service.format_sources(chunks, doc_names)
+
     # Get user_id for closure
     user_id_str = str(current_user.id)
 
@@ -313,8 +370,15 @@ async def chat_stream(
                 tokens_used=None,
             )
 
-            # Send done signal
-            yield f"data: {json.dumps({'content': '', 'done': True, 'conversation_id': str(conversation_id)})}\n\n"
+            # Send done signal with sources if RAG was used
+            done_data = {
+                "content": "",
+                "done": True,
+                "conversation_id": str(conversation_id),
+            }
+            if sources_data:
+                done_data["sources"] = sources_data
+            yield f"data: {json.dumps(done_data)}\n\n"
 
         except Exception as e:
             logger.error(f"Chat stream error: {e}")
