@@ -191,14 +191,18 @@
 		modelConfig = config;
 	}
 
+	// Throttled scroll to avoid too many scroll calls during streaming
+	let scrollTimeout: ReturnType<typeof setTimeout> | null = null;
 	function scrollToBottom() {
-		setTimeout(() => {
+		if (scrollTimeout) return; // Already scheduled
+		scrollTimeout = setTimeout(() => {
 			messagesEndRef?.scrollIntoView({ behavior: 'smooth' });
-		}, 100);
+			scrollTimeout = null;
+		}, 50);
 	}
 </script>
 
-<div class="flex h-full flex-col bg-background border rounded-xl shadow-md">
+<div class="flex h-full flex-col bg-background border rounded-xl shadow-md overflow-hidden min-w-0">
 	<!-- Header -->
 	<ChatHeader
 		{models}
@@ -214,8 +218,8 @@
 	/>
 
 	<!-- Messages Area -->
-	<ScrollArea.Root class="flex-1">
-		<div class="flex flex-col">
+	<ScrollArea.Root class="flex-1 min-h-0">
+		<div class="flex flex-col min-w-0">
 			{#if messages.length === 0}
 				<!-- Empty state -->
 				<div class="flex flex-1 items-center justify-center p-8 text-muted-foreground">

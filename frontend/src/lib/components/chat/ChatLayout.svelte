@@ -34,7 +34,7 @@
 	}
 </script>
 
-<div class="flex h-[calc(100vh-3.5rem)]">
+<div class="flex h-[calc(100vh-3.5rem)] overflow-hidden">
 	<!-- Desktop: Chat history sidebar -->
 	<div class="hidden lg:block">
 		<ChatHistorySidebar
@@ -71,7 +71,7 @@
 	</div>
 
 	<!-- Main chat area -->
-	<div class="flex-1 min-w-0">
+	<div class="flex-1 min-w-0 overflow-hidden">
 		{#if children}
 			{@render children()}
 		{/if}
