@@ -23,7 +23,7 @@ ALLOWED_FILE_TYPES = {"pdf", "docx", "txt", "md", "csv"}
 MAX_FILE_SIZE = 50 * 1024 * 1024  # 50MB
 
 
-@router.post("/upload", status_code=201)
+@router.post("", status_code=201)
 async def upload_document(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
@@ -69,6 +69,10 @@ async def upload_document(
         file_size=file_size,
         file_content=file_content,
     )
+
+    # Commit transaction before starting background task
+    # This ensures the document is visible to the background task's session
+    await db.commit()
 
     # Start background processing
     background_tasks.add_task(
@@ -160,6 +164,9 @@ async def get_document(
         for chunk in document.chunks
     ]
 
+    # Handle status as enum or string
+    status_value = document.status.value if hasattr(document.status, 'value') else document.status
+
     return BaseResponse(
         trace_id=ctx.trace_id,
         data=DocumentDetailResponse(
@@ -167,7 +174,7 @@ async def get_document(
             filename=document.filename,
             file_type=document.file_type,
             file_size=document.file_size,
-            status=document.status.value,
+            status=status_value,
             chunk_count=document.chunk_count,
             error_message=document.error_message,
             created_at=document.created_at,

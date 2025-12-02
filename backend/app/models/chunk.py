@@ -28,7 +28,7 @@ class DocumentChunk(Base):
         index=True,
     )
     content: Mapped[str] = mapped_column(Text, nullable=False)
-    embedding = mapped_column(Vector(1024), nullable=True)  # multilingual-e5-base dimension
+    embedding = mapped_column(Vector(768), nullable=True)  # Gemini text-embedding-004 dimension
     chunk_index: Mapped[int] = mapped_column(Integer, nullable=False)
     metadata_: Mapped[dict | None] = mapped_column(
         "metadata",

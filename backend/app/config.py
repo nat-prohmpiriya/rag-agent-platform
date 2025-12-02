@@ -44,8 +44,9 @@ class Settings(BaseSettings):
     storage_type: str = "local"
     storage_local_path: str = "./uploads"
 
-    # Embedding
-    embedding_model: str = "intfloat/multilingual-e5-base"
+    # Embedding (via LiteLLM)
+    embedding_model: str = "text-embedding-004"
+    embedding_dimension: int = 768
 
     @property
     def is_development(self) -> bool:
