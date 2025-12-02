@@ -12,7 +12,9 @@
       "Bash(lsof:*)",
       "Bash(docker stop:*)",
       "Bash(docker rm:*)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(uv sync:*)",
+      "Bash(sh:*)"
     ],
     "deny": [],
     "ask": []

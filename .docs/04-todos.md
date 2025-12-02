@@ -14,14 +14,15 @@
 
 | Component | Status | Notes |
 |-----------|--------|-------|
-| LiteLLM Proxy | Done | Config + Docker Compose ready |
-| Frontend (SvelteKit) | Skeleton | Basic setup + Tailwind |
-| Backend (FastAPI) | L Not Started | Empty folder |
-| PostgreSQL | L Not Started | - |
-| ChromaDB | L Not Started | - |
-| Auth System | L Not Started | - |
-| RAG Pipeline | L Not Started | - |
-| Agent System | L Not Started | - |
+| LiteLLM Proxy | ✅ Done | Running on port 4000, UI available |
+| Frontend (SvelteKit) | 🟡 Skeleton | Basic setup + Tailwind |
+| Backend (FastAPI) | ❌ Not Started | Empty folder |
+| PostgreSQL | ✅ Done | Running in docker (for LiteLLM) |
+| Redis | ✅ Done | Running for LiteLLM cache |
+| ChromaDB | ❌ Not Started | - |
+| Auth System | ❌ Not Started | - |
+| RAG Pipeline | ❌ Not Started | - |
+| Agent System | ❌ Not Started | - |
 
 ---
 
@@ -29,13 +30,13 @@
 
 ### 1.1 Infrastructure Setup
 - [x] Setup LiteLLM Docker Compose
-- [x] Create LiteLLM config (Gemini models)
+- [x] Create LiteLLM config (Gemini + Groq models)
 - [x] Generate environment variables script
-- [ ] Add Ollama to docker-compose (local LLM)
-- [ ] Test LiteLLM proxy connection
-- [ ] Setup PostgreSQL in docker-compose
-- [ ] Setup Redis (for LiteLLM cache) - already in compose
-- [ ] Verify all containers run together
+- [x] Test LiteLLM proxy connection
+- [x] Setup PostgreSQL in docker-compose
+- [x] Setup Redis (for LiteLLM cache)
+- [x] Verify all containers run together
+- [x] Setup LiteLLM UI credentials
 
 ### 1.2 Backend Setup (FastAPI)
 - [ ] Initialize FastAPI project structure
