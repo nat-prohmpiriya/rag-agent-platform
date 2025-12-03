@@ -35,7 +35,8 @@
 		{ label: 'Images', href: '/images', icon: Image },
 		{ label: 'Documents', href: '/documents', icon: FileText },
 		{ label: 'Projects', href: '/projects', icon: Folder },
-		{ label: 'Agents', href: '/agents', icon: Bot }
+		{ label: 'Agents', href: '/agents', icon: Bot },
+		{ label: 'Profile', href: '/profile', icon: User }
 	];
 
 	let chatHistoryContainer: HTMLDivElement;
@@ -272,7 +273,7 @@
 											{...triggerProps}
 											class="flex w-full items-center justify-center rounded-lg p-2 hover:bg-accent"
 										>
-											<Avatar.Root class="h-8 w-8">
+											<Avatar.Root class="h-8 w-8 cursor-pointer">
 												{#if user.avatar}
 													<Avatar.Image
 														src={user.avatar}
@@ -301,15 +302,9 @@
 									</DropdownMenu.Label>
 									<DropdownMenu.Separator />
 									<DropdownMenu.Item>
-										<a href="/settings" class="flex items-center">
+										<a href="/profile" class="flex items-center">
 											<User class="mr-2 h-4 w-4" />
 											Profile
-										</a>
-									</DropdownMenu.Item>
-									<DropdownMenu.Item>
-										<a href="/settings" class="flex items-center">
-											<Settings class="mr-2 h-4 w-4" />
-											Settings
 										</a>
 									</DropdownMenu.Item>
 									<DropdownMenu.Separator />
@@ -354,9 +349,9 @@
 						{#snippet child({ props })}
 							<button
 								{...props}
-								class="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm hover:bg-accent"
+								class="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm hover:bg-accent cursor-pointer"
 							>
-								<Avatar.Root class="h-8 w-8">
+								<Avatar.Root class="h-8 w-8 cursor-pointer">
 									{#if user.avatar}
 										<Avatar.Image src={user.avatar} alt={user.name} />
 									{/if}
@@ -374,16 +369,10 @@
 						{/snippet}
 					</DropdownMenu.Trigger>
 					<DropdownMenu.Content class="w-56" side="right" align="end">
-						<DropdownMenu.Item>
-							<a href="/settings" class="flex items-center">
+						<DropdownMenu.Item class="cursor-pointer">
+							<a href="/profile" class="flex items-center">
 								<User class="mr-2 h-4 w-4" />
 								Profile
-							</a>
-						</DropdownMenu.Item>
-						<DropdownMenu.Item>
-							<a href="/settings" class="flex items-center">
-								<Settings class="mr-2 h-4 w-4" />
-								Settings
 							</a>
 						</DropdownMenu.Item>
 						<DropdownMenu.Separator />

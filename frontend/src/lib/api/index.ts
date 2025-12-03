@@ -5,3 +5,4 @@ export { conversationsApi, type Conversation, type ConversationDetail, type Mess
 export { documentsApi, type Document, type DocumentDetail, type DocumentStatus } from './documents';
 export { projectsApi, type Project, type ProjectDetail, type ProjectCreate, type ProjectUpdate } from './projects';
 export { agentsApi, type AgentInfo, type AgentDetail, type AgentCreate, type AgentUpdate, type ToolInfo, type AgentListResponse, type AgentToolsResponse } from './agents';
+export { profileApi, type UserProfile, type UserStats, type UserUpdate, type ChangePasswordRequest, type DeleteAccountRequest } from './profile';
