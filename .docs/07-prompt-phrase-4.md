@@ -231,7 +231,7 @@ curl -s -X POST http://localhost:8000/api/chat \
 
 ---
 
-### Task F5: Agent Thinking Component
+### [x] Task F5: Agent Thinking Component
 
 **Files**: `frontend/src/lib/components/agents/AgentThinking.svelte`
 
@@ -247,7 +247,7 @@ curl -s -X POST http://localhost:8000/api/chat \
 
 ---
 
-### Task F6: Chat Integration
+### [x] Task F6: Chat Integration
 
 **Files**: Update `LLMChat.svelte`, `ChatHeader.svelte`
 
@@ -264,7 +264,7 @@ curl -s -X POST http://localhost:8000/api/chat \
 
 ---
 
-### Task F7: Agents Page
+### [x] Task F7: Agents Page
 
 **Files**: `frontend/src/routes/(app)/agents/+page.svelte`
 
@@ -337,6 +337,309 @@ async def get_agent(slug: str) -> Agent | None:
 ### BaseResponse Pattern
 ```python
 return BaseResponse(trace_id=ctx.trace_id, data=AgentInfo.model_validate(agent))
+```
+
+---
+
+---
+
+## User-Created Agents Feature ⭐ NEW
+
+### Overview
+
+**Goal**: Users can create their own agents with custom settings and linked documents.
+
+**Why User Agents?**
+- Different users have different documents
+- Same agent name, different knowledge bases
+- Personalized system prompts
+- Project-scoped agents
+
+**Agent Types**:
+| Type | Description | Created By |
+|------|-------------|------------|
+| **System Agents** | Pre-built from YAML config | Admin |
+| **User Agents** | Custom agents in database | User |
+
+---
+
+### [x] Task B6: Update Agent Model for User Agents
+
+**Files**: `backend/app/models/agent.py`, `backend/app/schemas/agent.py`
+
+**Context**:
+- `backend/app/models/agent.py` - current Agent model
+- `backend/app/models/document.py` - Document model for linking
+
+**Requirements**:
+1. Add fields to Agent model: `user_id` (FK to User), `document_ids` (JSON array), `project_id` (FK optional)
+2. Add `source` field: "system" | "user" to distinguish agent types
+3. Update `AgentInfo` schema with new fields
+4. Create migration
+
+**Testing**:
+```bash
+cd backend && uv run alembic upgrade head
+cd backend && uv run python -c "from app.models.agent import Agent; print('OK')"
+```
+
+---
+
+### [x] Task B7: Agent CRUD API
+
+**Files**: `backend/app/routes/agents.py`, `backend/app/services/agent_service.py`
+
+**Context**:
+- `backend/app/routes/projects.py` - CRUD pattern
+- `backend/app/services/project_service.py` - service pattern
+
+**Requirements**:
+1. Create `agent_service.py`:
+   - `create_agent(db, user_id, data)` - create user agent
+   - `update_agent(db, agent_id, user_id, data)` - update (owner only)
+   - `delete_agent(db, agent_id, user_id)` - soft delete (owner only)
+   - `get_user_agents(db, user_id)` - list user's agents
+   - `get_agent_with_documents(db, agent_id)` - get with linked docs
+
+2. Add routes:
+   - `POST /api/agents` - create user agent
+   - `PUT /api/agents/{id}` - update (owner only)
+   - `DELETE /api/agents/{id}` - delete (owner only)
+
+3. Update `GET /api/agents`:
+   - Return both system agents + user's agents
+   - Add `source` field in response
+
+**API Endpoints**:
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | /api/agents | List system + user agents |
+| POST | /api/agents | Create user agent |
+| GET | /api/agents/{id} | Get agent details |
+| PUT | /api/agents/{id} | Update user agent |
+| DELETE | /api/agents/{id} | Delete user agent |
+
+**Testing**:
+```bash
+TOKEN="your-jwt-token"
+
+# Create user agent
+curl -s -X POST http://localhost:8000/api/agents \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "My Research Agent",
+    "slug": "my-research",
+    "description": "Personal research assistant",
+    "icon": "search",
+    "system_prompt": "You are a helpful research assistant...",
+    "tools": ["rag_search", "summarize"],
+    "document_ids": ["uuid1", "uuid2"]
+  }' | jq
+
+# List agents (should include user's agent)
+curl -s http://localhost:8000/api/agents \
+  -H "Authorization: Bearer $TOKEN" | jq
+
+# Update agent
+curl -s -X PUT http://localhost:8000/api/agents/{agent_id} \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"name": "Updated Name"}' | jq
+
+# Delete agent
+curl -s -X DELETE http://localhost:8000/api/agents/{agent_id} \
+  -H "Authorization: Bearer $TOKEN" | jq
+```
+
+---
+
+### [x] Task B8: Agent Engine with Document Scope
+
+**Files**: `backend/app/agents/engine.py`
+
+**Context**:
+- `backend/app/agents/engine.py` - current AgentEngine
+- `backend/app/services/rag.py` - RAG service with doc filtering
+
+**Requirements**:
+1. Update `AgentEngine.__init__()`: accept `document_ids` param
+2. When using `rag_search` tool, pass `document_ids` to filter retrieval
+3. If agent has linked documents, auto-use them for RAG
+
+**Testing**:
+```bash
+# Chat with user agent that has linked documents
+curl -s -X POST http://localhost:8000/api/chat \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"message": "Search my documents", "agent_slug": "my-research"}' | jq
+```
+
+---
+
+### [x] Task F8: Agent Form Component
+
+**Files**: `frontend/src/lib/components/agents/AgentForm.svelte`
+
+**Context**:
+- `frontend/src/lib/components/projects/ProjectForm.svelte` - form pattern (if exists)
+- `frontend/src/lib/components/ui/input/`
+- `frontend/src/lib/components/ui/textarea/`
+- `frontend/src/lib/components/ui/dialog/`
+
+**Requirements**:
+1. Create form with fields:
+   - Name (required)
+   - Slug (auto-generate from name, editable)
+   - Description (optional)
+   - Icon selector (dropdown or grid)
+   - System prompt (textarea)
+   - Tools (multi-select checkboxes)
+   - Document linking (multi-select from user's documents)
+
+2. Props:
+   - `mode: 'create' | 'edit'`
+   - `agent?: AgentInfo` (for edit mode)
+   - `onSubmit: (data) => void`
+   - `onCancel: () => void`
+
+3. Validation:
+   - Name required, max 100 chars
+   - Slug unique pattern: `[a-z0-9-]+`
+   - System prompt max 10000 chars
+
+**Testing**: `cd frontend && npm run check`
+
+---
+
+### [x] Task F9: Agent Form Dialog
+
+**Files**: `frontend/src/lib/components/agents/AgentFormDialog.svelte`
+
+**Context**:
+- `frontend/src/lib/components/ui/dialog/`
+
+**Requirements**:
+1. Dialog wrapper for AgentForm
+2. Props: `open`, `mode`, `agent?`, `onClose`, `onSave`
+3. Title: "Create Agent" / "Edit Agent"
+4. Loading state during save
+
+**Testing**: `cd frontend && npm run check`
+
+---
+
+### [x] Task F10: Update Agent API & Store
+
+**Files**: `frontend/src/lib/api/agents.ts`, `frontend/src/lib/stores/agents.svelte.ts`
+
+**Context**:
+- `frontend/src/lib/api/agents.ts` - current API
+- `frontend/src/lib/stores/agents.svelte.ts` - current store
+
+**Requirements**:
+1. Add API functions:
+   - `createAgent(data)`
+   - `updateAgent(id, data)`
+   - `deleteAgent(id)`
+
+2. Update store:
+   - Add `createAgent()`, `updateAgent()`, `deleteAgent()` actions
+   - Refresh agents list after mutations
+
+**Testing**: `cd frontend && npm run check`
+
+---
+
+### [x] Task F11: Update Agents Page
+
+**Files**: `frontend/src/routes/(app)/agents/+page.svelte`
+
+**Context**:
+- `frontend/src/routes/(app)/agents/+page.svelte` - current page
+- Task F8, F9 outputs
+
+**Requirements**:
+1. Add "New Agent" button in header
+2. Show AgentFormDialog on click
+3. Add edit/delete buttons on user's AgentCards
+4. Show "System" badge on system agents
+5. Group: "System Agents" section, "My Agents" section
+
+**Testing**: Manual - create, edit, delete agents
+
+---
+
+### Task F12: Document Selector Component
+
+**Files**: `frontend/src/lib/components/agents/DocumentSelector.svelte`
+
+**Context**:
+- `frontend/src/lib/api/documents.ts` - documents API
+- `frontend/src/lib/components/ui/checkbox/`
+
+**Requirements**:
+1. Load user's documents list
+2. Multi-select with checkboxes
+3. Show document name, status, file type
+4. Props: `selectedIds: string[]`, `onChange: (ids) => void`
+5. Search/filter functionality
+
+**Testing**: `cd frontend && npm run check`
+
+---
+
+## Execution Order
+
+```
+Backend:  B6 → B7 → B8
+Frontend: F10 → F8 → F12 → F9 → F11
+```
+
+**Backend first**: Model update → CRUD API → Engine update
+**Frontend**: API/Store → Form → Document selector → Dialog → Page
+
+---
+
+## Database Migration
+
+```sql
+-- Add columns to agents table
+ALTER TABLE agents ADD COLUMN user_id UUID REFERENCES users(id);
+ALTER TABLE agents ADD COLUMN source VARCHAR(20) DEFAULT 'system';
+ALTER TABLE agents ADD COLUMN document_ids JSONB DEFAULT '[]';
+ALTER TABLE agents ADD COLUMN project_id UUID REFERENCES projects(id);
+
+-- Index for user agents
+CREATE INDEX idx_agents_user_id ON agents(user_id);
+CREATE INDEX idx_agents_source ON agents(source);
+```
+
+---
+
+## Quick Reference
+
+### Agent Create Schema
+```python
+class AgentCreate(BaseModel):
+    name: str = Field(..., min_length=1, max_length=100)
+    slug: str = Field(..., pattern=r"^[a-z0-9-]+$")
+    description: str | None = None
+    icon: str | None = None
+    system_prompt: str | None = None
+    tools: list[str] = []
+    document_ids: list[str] = []
+    project_id: str | None = None
+```
+
+### Document Selector Props
+```typescript
+interface Props {
+  selectedIds: string[];
+  onChange: (ids: string[]) => void;
+  disabled?: boolean;
+}
 ```
 
 ---

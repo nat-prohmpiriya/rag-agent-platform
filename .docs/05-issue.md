@@ -1,5 +1,5 @@
 # ISSUE 
-- []fix ui chat with documents page
+- [] fix ui chat with documents page
 - [] fix cancle haderbar
 - [x] หน้า login remember username last login, password สามารถ show/hide ได้
 - [] ปรับปรุง ปุ่มทุกปปุ้ม มี cursor pointer when hover

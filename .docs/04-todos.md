@@ -234,12 +234,12 @@
 - [x] Add Agents link to Sidebar
 
 ### 4.5 User-Created Agents ⭐ NEW
-- [ ] Update Agent model with user_id, document_ids, project_id
-- [ ] Create agent CRUD API (POST/PUT/DELETE)
-- [ ] Create AgentForm component (create/edit)
-- [ ] Add "New Agent" button on Agents page
-- [ ] Implement document linking in agent form
-- [ ] Implement project scoping
+- [x] Update Agent model with user_id, document_ids, project_id
+- [x] Create agent CRUD API (POST/PUT/DELETE)
+- [x] Create AgentForm component (create/edit)
+- [x] Add "New Agent" button on Agents page
+- [x] Implement document linking in agent form
+- [x] Implement project scoping
 
 **Phase 4 Deliverable**: User can select different agents for different tasks, create custom agents
 
