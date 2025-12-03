@@ -192,6 +192,7 @@ async def chat(
                 user_id=current_user.id,
                 top_k=data.rag_top_k,
                 document_ids=data.rag_document_ids,
+                project_id=data.project_id,
             )
             if chunks:
                 # Build RAG system prompt
@@ -322,6 +323,7 @@ async def chat_stream(
             user_id=current_user.id,
             top_k=data.rag_top_k,
             document_ids=data.rag_document_ids,
+            project_id=data.project_id,
         )
         if chunks:
             # Build RAG system prompt

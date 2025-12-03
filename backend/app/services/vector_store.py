@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.telemetry import traced
 from app.models.chunk import DocumentChunk
 from app.models.document import Document
+from app.models.project_document import ProjectDocument
 from app.schemas.vector import ChunkCreate, ChunkResult
 
 logger = logging.getLogger(__name__)
@@ -37,6 +38,7 @@ class VectorStore(ABC):
         top_k: int,
         user_id: uuid.UUID,
         document_ids: list[uuid.UUID] | None = None,
+        project_id: uuid.UUID | None = None,
     ) -> list[ChunkResult]:
         """
         Search for similar chunks using vector similarity.
@@ -47,6 +49,7 @@ class VectorStore(ABC):
             top_k: Number of results to return
             user_id: User ID to filter documents by ownership
             document_ids: Optional list of document IDs to scope the search
+            project_id: Optional project ID to filter documents in project
 
         Returns:
             List of chunk results sorted by similarity
@@ -95,6 +98,7 @@ class PgVectorStore(VectorStore):
         top_k: int,
         user_id: uuid.UUID,
         document_ids: list[uuid.UUID] | None = None,
+        project_id: uuid.UUID | None = None,
     ) -> list[ChunkResult]:
         """Search for similar chunks using cosine distance.
 
@@ -105,6 +109,8 @@ class PgVectorStore(VectorStore):
             user_id: User ID to filter documents by ownership
             document_ids: Optional list of document IDs to scope the search.
                          If None, search all user's documents.
+            project_id: Optional project ID to filter documents in project.
+                       If provided, only searches documents assigned to that project.
         """
         # Use pgvector's cosine distance operator (<=>)
         # Lower distance = higher similarity
@@ -123,6 +129,13 @@ class PgVectorStore(VectorStore):
             .where(Document.user_id == user_id)
             .where(DocumentChunk.embedding.isnot(None))
         )
+
+        # Filter by project (join with ProjectDocument)
+        if project_id:
+            stmt = stmt.join(
+                ProjectDocument,
+                ProjectDocument.document_id == Document.id,
+            ).where(ProjectDocument.project_id == project_id)
 
         # Optional: Filter by specific documents
         if document_ids:

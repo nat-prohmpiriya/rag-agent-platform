@@ -24,6 +24,10 @@ class ChatRequest(BaseModel):
         default=None,
         description="Optional list of document IDs to scope RAG search. If None, search all user's documents."
     )
+    project_id: uuid.UUID | None = Field(
+        default=None,
+        description="Optional project ID to scope RAG search to documents in that project."
+    )
 
     model_config = ConfigDict(
         json_schema_extra={
@@ -37,6 +41,7 @@ class ChatRequest(BaseModel):
                 "use_rag": False,
                 "rag_top_k": 5,
                 "rag_document_ids": None,
+                "project_id": None,
             }
         }
     )

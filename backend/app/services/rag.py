@@ -36,6 +36,7 @@ async def retrieve_context(
     user_id: uuid.UUID,
     top_k: int = 5,
     document_ids: list[uuid.UUID] | None = None,
+    project_id: uuid.UUID | None = None,
 ) -> list[ChunkResult]:
     """
     Retrieve relevant document chunks for a query.
@@ -47,6 +48,8 @@ async def retrieve_context(
         top_k: Number of chunks to retrieve
         document_ids: Optional list of document IDs to scope the search.
                      If None, search all user's documents.
+        project_id: Optional project ID to filter documents in project.
+                   If provided, only searches documents assigned to that project.
 
     Returns:
         List of relevant chunks with scores
@@ -64,9 +67,11 @@ async def retrieve_context(
         top_k=top_k,
         user_id=user_id,
         document_ids=document_ids,
+        project_id=project_id,
     )
 
-    logger.info(f"Retrieved {len(chunks)} chunks for query (scoped to {len(document_ids) if document_ids else 'all'} docs)")
+    scope_info = f"project {project_id}" if project_id else (f"{len(document_ids)} docs" if document_ids else "all")
+    logger.info(f"Retrieved {len(chunks)} chunks for query (scoped to {scope_info})")
     return chunks
 
 
