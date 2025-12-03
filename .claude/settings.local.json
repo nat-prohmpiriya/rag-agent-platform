@@ -70,7 +70,22 @@
       "Bash(timeout 60 uv run:*)",
       "Bash(docker exec:*)",
       "Bash(TOKEN=\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI5MGZlMzQ4NS1mMzI1LTRkYWItYjE2OS1hMTA2MGI2NGUzZjUiLCJleHAiOjE3NjQ2OTczMzUsInR5cGUiOiJhY2Nlc3MifQ.zo6DoJj8vKUJPovjxvE1Dck4_7pV_L8eVccfvKDWMpc\")",
-      "Bash(__NEW_LINE__ curl -s -X POST \"http://localhost:8000/api/chat\" -H \"Authorization: Bearer $TOKEN\" -H \"Content-Type: application/json\" -d '{\"\"message\"\": \"\"What is AI transforming according to the documents?\"\", \"\"use_rag\"\": true, \"\"rag_top_k\"\": 3}')"
+      "Bash(__NEW_LINE__ curl -s -X POST \"http://localhost:8000/api/chat\" -H \"Authorization: Bearer $TOKEN\" -H \"Content-Type: application/json\" -d '{\"\"message\"\": \"\"What is AI transforming according to the documents?\"\", \"\"use_rag\"\": true, \"\"rag_top_k\"\": 3}')",
+      "Bash(pkill:*)",
+      "Bash(TOKEN=\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI0NDk0ZThlMC1mMzBlLTQyMDMtYjBhYS03MThiMWQ1MmNlYzMiLCJleHAiOjE3NjQ3MjQ4MDksInR5cGUiOiJhY2Nlc3MifQ.CQAt9VuurREzDDcl7RUQlrlmgO2njkkbm1qUJqKijNY\")",
+      "Bash(echo \"=== 1. Create Project ===\" curl -s -X POST \"http://localhost:8000/api/projects\" -H \"Authorization: Bearer $TOKEN\" -H \"Content-Type: application/json\" -d '{\"\"\"\"name\"\"\"\": \"\"\"\"Test Project\"\"\"\", \"\"\"\"description\"\"\"\": \"\"\"\"A test project for API testing\"\"\"\"}')",
+      "Bash(__NEW_LINE__ echo \"=== 1. Create Project ===\")",
+      "Bash(PROJECT_ID=\"2d3fb5ff-e7c8-47fc-a681-ead833782ab3\":*)",
+      "Bash(__NEW_LINE__ echo \"=== 2. List Projects ===\")",
+      "Bash(__NEW_LINE__ echo \"\")",
+      "Bash(PROJECT_ID=\"7ae65f91-96d2-4f93-ab4e-ce53ace360ae\":*)",
+      "Bash(__NEW_LINE__ echo \"=== Test Get Project Documents (empty) ===\")",
+      "Bash(yes:*)",
+      "Bash(\"frontend/src/routes/(app)/+layout.svelte\" )",
+      "Bash(\"frontend/src/routes/(app)/chat/+page.svelte\" )",
+      "Bash(\"frontend/src/routes/(app)/chat/[id]/+page.svelte\" )",
+      "Bash(frontend/src/lib/components/ui/tabs/ )",
+      "Bash(\"frontend/src/routes/(app)/projects/\")"
     ],
     "deny": [],
     "ask": []
