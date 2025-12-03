@@ -37,6 +37,7 @@ export interface ChatRequest {
 	rag_top_k?: number;
 	rag_document_ids?: string[];
 	project_id?: string;
+	agent_slug?: string;
 }
 
 export interface ChatMessage {
