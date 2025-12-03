@@ -28,6 +28,10 @@ class ChatRequest(BaseModel):
         default=None,
         description="Optional project ID to scope RAG search to documents in that project."
     )
+    agent_slug: str | None = Field(
+        default=None,
+        description="Optional agent slug to use for processing. If provided, uses AgentEngine with tools."
+    )
 
     model_config = ConfigDict(
         json_schema_extra={
@@ -42,6 +46,7 @@ class ChatRequest(BaseModel):
                 "rag_top_k": 5,
                 "rag_document_ids": None,
                 "project_id": None,
+                "agent_slug": None,
             }
         }
     )
@@ -96,3 +101,18 @@ class ChatStreamChunk(BaseModel):
 
     content: str
     done: bool = False
+
+
+class AgentChatResponse(BaseModel):
+    """Chat response when using an agent."""
+
+    message: ChatMessage
+    model: str | None = None
+    usage: UsageInfo | None = None
+    conversation_id: uuid.UUID | None = None
+    sources: list[SourceInfo] | None = None
+    tools_used: list[str] | None = None
+    thinking: str | None = None
+    agent_slug: str | None = None
+
+    model_config = ConfigDict(from_attributes=True)

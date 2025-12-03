@@ -16,10 +16,11 @@ from app.models.user import User
 from app.providers.llm import ChatMessage as LLMChatMessage
 from app.providers.llm import llm_client
 from app.schemas.base import BaseResponse
-from app.schemas.chat import ChatMessage, ChatRequest, ChatResponse, SourceInfo, UsageInfo
+from app.schemas.chat import AgentChatResponse, ChatMessage, ChatRequest, ChatResponse, SourceInfo, UsageInfo
 from app.services import conversation as conversation_service
 from app.services import rag as rag_service
 from app.services.models import fetch_models_from_litellm
+from app.agents.engine import AgentEngine
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/chat", tags=["chat"])
@@ -138,12 +139,13 @@ async def chat(
     data: ChatRequest,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-) -> BaseResponse[ChatResponse]:
+) -> BaseResponse[ChatResponse | AgentChatResponse]:
     """
     Send a chat message and get a response (non-streaming).
 
     If conversation_id is not provided, a new conversation will be created.
     Messages are saved to the database.
+    If agent_slug is provided, uses AgentEngine with tools.
 
     Requires authentication.
     """
@@ -153,6 +155,7 @@ async def chat(
         "action": "chat",
         "model": data.model or llm_client.default_model,
         "message_length": len(data.message),
+        "agent_slug": data.agent_slug,
     })
 
     try:
@@ -183,6 +186,67 @@ async def chat(
         messages = messages[:-1]
         messages.append(LLMChatMessage(role="user", content=data.message))
 
+        # If agent_slug is provided, use AgentEngine
+        if data.agent_slug:
+            try:
+                engine = AgentEngine(data.agent_slug)
+            except ValueError as e:
+                raise HTTPException(status_code=404, detail=str(e))
+
+            # Process with agent
+            agent_response = await engine.process(
+                messages=messages,
+                db=db,
+                user_id=current_user.id,
+            )
+
+            # Save assistant message to DB
+            tokens_used = agent_response.usage.get("total_tokens") if agent_response.usage else None
+            await conversation_service.add_message(
+                db=db,
+                conversation_id=conversation_id,
+                role="assistant",
+                content=agent_response.content,
+                tokens_used=tokens_used,
+            )
+
+            # Build sources from agent response
+            sources = None
+            if agent_response.sources:
+                sources = [
+                    SourceInfo(
+                        document_id=s.get("document_id", ""),
+                        filename=s.get("filename", "Unknown"),
+                        chunk_index=s.get("chunk_index", 0),
+                        score=s.get("score", 0.0),
+                        content=s.get("content", ""),
+                    )
+                    for s in agent_response.sources
+                ]
+
+            # Build agent response
+            usage_info = UsageInfo(**agent_response.usage) if agent_response.usage else None
+            response_data = AgentChatResponse(
+                message=ChatMessage(
+                    role="assistant",
+                    content=agent_response.content,
+                    created_at=datetime.utcnow(),
+                ),
+                model=agent_response.model,
+                usage=usage_info,
+                conversation_id=conversation_id,
+                sources=sources,
+                tools_used=agent_response.tools_used,
+                thinking=agent_response.thinking,
+                agent_slug=data.agent_slug,
+            )
+
+            return BaseResponse(
+                trace_id=ctx.trace_id,
+                data=response_data,
+            )
+
+        # Standard chat flow (no agent)
         # RAG: Retrieve context and build system prompt if enabled
         sources: list[SourceInfo] | None = None
         if data.use_rag:
@@ -259,6 +323,8 @@ async def chat(
             data=chat_response,
         )
 
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Chat error: {e}")
         raise HTTPException(status_code=500, detail=f"Chat failed: {str(e)}")

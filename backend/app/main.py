@@ -9,7 +9,7 @@ from app.core.context import get_context
 from app.core.exceptions import AppException
 from app.core.telemetry import instrument_app, setup_telemetry
 from app.middleware import TraceContextMiddleware
-from app.routes import auth, chat, conversations, documents, health, projects
+from app.routes import agents, auth, chat, conversations, documents, health, projects
 from app.schemas.base import ErrorResponse
 
 
@@ -68,6 +68,7 @@ app.include_router(chat.router, prefix="/api")
 app.include_router(conversations.router, prefix="/api")
 app.include_router(documents.router, prefix="/api")
 app.include_router(projects.router, prefix="/api")
+app.include_router(agents.router, prefix="/api")
 
 
 @app.get("/")
