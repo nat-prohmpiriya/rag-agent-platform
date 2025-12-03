@@ -4,6 +4,7 @@
 	import { conversationsApi, type Conversation } from '$lib/api/conversations';
 	import { ChatLayout } from '$lib/components/chat';
 	import LLMChat from '$lib/components/llm-chat/LLMChat.svelte';
+	import { projectStore } from '$lib/stores';
 
 	// State
 	let conversations = $state<Conversation[]>([]);
@@ -53,6 +54,11 @@
 
 <ChatLayout {conversations} currentId={null} {loading} onDelete={handleDelete}>
 	<div class="h-full p-4">
-		<LLMChat onConversationCreated={handleConversationCreated} onNewChat={handleNewChat} />
+		<LLMChat
+			projectId={projectStore.currentProjectId ?? undefined}
+			projectName={projectStore.currentProject?.name}
+			onConversationCreated={handleConversationCreated}
+			onNewChat={handleNewChat}
+		/>
 	</div>
 </ChatLayout>

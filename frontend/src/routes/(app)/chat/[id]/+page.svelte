@@ -5,6 +5,7 @@
 	import { conversationsApi, type Conversation, type ConversationDetail } from '$lib/api/conversations';
 	import { ChatLayout } from '$lib/components/chat';
 	import LLMChat from '$lib/components/llm-chat/LLMChat.svelte';
+	import { projectStore } from '$lib/stores';
 
 	// State
 	let conversations = $state<Conversation[]>([]);
@@ -105,6 +106,8 @@
 			<LLMChat
 				conversationId={conversationId}
 				initialMessages={conversationDetail.messages}
+				projectId={projectStore.currentProjectId ?? undefined}
+				projectName={projectStore.currentProject?.name}
 				onNewChat={handleNewChat}
 			/>
 		</div>

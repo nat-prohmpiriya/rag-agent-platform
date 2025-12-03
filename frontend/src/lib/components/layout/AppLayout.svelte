@@ -8,14 +8,17 @@
 	import Sidebar from './Sidebar.svelte';
 	import { Menu } from 'lucide-svelte';
 	import { sidebar } from '$lib/stores';
+	import type { Project } from '$lib/api';
 
-	let { children, user, currentProject, projects, onLogout, onProjectSelect, onNewProject }: {
+	let { children, user, currentProject, currentProjectId, projects, loading, onLogout, onProjectSelect, onNewProject }: {
 		children?: Snippet;
 		user?: { name: string; email: string; avatar?: string } | null;
 		currentProject?: { id: string; name: string } | null;
-		projects?: { id: string; name: string }[];
+		currentProjectId?: string | null;
+		projects?: Project[];
+		loading?: boolean;
 		onLogout?: () => void;
-		onProjectSelect?: (projectId: string) => void;
+		onProjectSelect?: (projectId: string | null) => void;
 		onNewProject?: () => void;
 	} = $props();
 
@@ -48,7 +51,7 @@
 						{/snippet}
 					</Sheet.Trigger>
 					<Sheet.Content side="left" class="w-64 p-0">
-						<Sidebar {currentProject} {projects} {onProjectSelect} {onNewProject} />
+						<Sidebar {currentProject} {currentProjectId} {projects} {loading} {onProjectSelect} {onNewProject} />
 					</Sheet.Content>
 				</Sheet.Root>
 			{/snippet}
@@ -60,7 +63,9 @@
 				<div class="sticky top-14 h-[calc(100vh-3.5rem)]">
 					<Sidebar
 						{currentProject}
+						{currentProjectId}
 						{projects}
+						{loading}
 						{onProjectSelect}
 						{onNewProject}
 						collapsed={sidebar.collapsed}

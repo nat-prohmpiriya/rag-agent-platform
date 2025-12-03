@@ -1,15 +1,29 @@
 <script lang="ts">
 	import { page } from '$app/stores';
+	import { goto } from '$app/navigation';
 	import { Button } from '$lib/components/ui/button';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import { Separator } from '$lib/components/ui/separator';
 	import * as Tooltip from '$lib/components/ui/tooltip';
-	import { MessageSquare, FileText, Users, Database, Sliders, Settings, ChevronLeft, ChevronRight, FolderOpen, Plus } from 'lucide-svelte';
+	import { MessageSquare, FileText, Users, Database, Sliders, Settings, ChevronLeft, ChevronRight, FolderOpen, Plus, ExternalLink } from 'lucide-svelte';
+	import ProjectList from '$lib/components/projects/ProjectList.svelte';
+	import type { Project } from '$lib/api';
 
-	let { currentProject, projects, onProjectSelect, onNewProject, collapsed = false, onToggle } = $props<{
+	let {
+		currentProject,
+		projects = [],
+		currentProjectId = null,
+		loading = false,
+		onProjectSelect,
+		onNewProject,
+		collapsed = false,
+		onToggle
+	} = $props<{
 		currentProject?: { id: string; name: string } | null;
-		projects?: { id: string; name: string }[];
-		onProjectSelect?: (projectId: string) => void;
+		projects?: Project[];
+		currentProjectId?: string | null;
+		loading?: boolean;
+		onProjectSelect?: (projectId: string | null) => void;
 		onNewProject?: () => void;
 		collapsed?: boolean;
 		onToggle?: () => void;
@@ -33,26 +47,39 @@
 	function isActive(href: string): boolean {
 		return $page.url.pathname.startsWith(href);
 	}
+
+	function handleProjectSelect(id: string | null) {
+		onProjectSelect?.(id);
+	}
+
+	function handleViewProject() {
+		if (currentProjectId) {
+			goto(`/projects/${currentProjectId}`);
+		}
+	}
 </script>
 
 <aside class="flex h-full flex-col border-r bg-background transition-all duration-300 {collapsed ? 'w-16' : 'w-64'}">
 	<!-- Project selector -->
 	{#if !collapsed}
 		<div class="p-4">
-			<div class="mb-2 flex items-center justify-between">
-				<span class="text-sm font-medium text-muted-foreground">Projects</span>
-				<Button variant="ghost" size="sm" onclick={onNewProject}>
-					<Plus class="h-4 w-4" />
-				</Button>
-			</div>
-			{#if currentProject}
-				<Button variant="outline" class="w-full justify-start">
-					<FolderOpen class="mr-2 h-4 w-4" />
-					{currentProject.name}
-				</Button>
-			{:else}
-				<Button variant="outline" class="w-full justify-start text-muted-foreground">
-					Select a project...
+			<ProjectList
+				{projects}
+				{currentProjectId}
+				{loading}
+				onSelect={handleProjectSelect}
+				onCreate={onNewProject ?? (() => {})}
+			/>
+			<!-- View project details link -->
+			{#if currentProjectId}
+				<Button
+					variant="ghost"
+					size="sm"
+					class="mt-2 w-full justify-start text-xs text-muted-foreground"
+					onclick={handleViewProject}
+				>
+					<ExternalLink class="mr-2 h-3 w-3" />
+					View Project Details
 				</Button>
 			{/if}
 		</div>
