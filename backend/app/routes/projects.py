@@ -136,6 +136,7 @@ async def update_project(
         raise HTTPException(status_code=404, detail="Project not found")
 
     await db.commit()
+    await db.refresh(project)
 
     return BaseResponse(
         trace_id=ctx.trace_id,
