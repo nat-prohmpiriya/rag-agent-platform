@@ -1,24 +1,16 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import { onMount } from 'svelte';
-	import { Button } from '$lib/components/ui/button';
 	import * as Sheet from '$lib/components/ui/sheet';
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import Sidebar from './Sidebar.svelte';
 	import { Menu } from 'lucide-svelte';
 	import { sidebar } from '$lib/stores';
-	import type { Project } from '$lib/api';
 
-	let { children, user, currentProject, currentProjectId, projects, loading, onLogout, onProjectSelect, onNewProject }: {
+	let { children, user, onLogout }: {
 		children?: Snippet;
 		user?: { name: string; email: string; avatar?: string } | null;
-		currentProject?: { id: string; name: string } | null;
-		currentProjectId?: string | null;
-		projects?: Project[];
-		loading?: boolean;
 		onLogout?: () => void;
-		onProjectSelect?: (projectId: string | null) => void;
-		onNewProject?: () => void;
 	} = $props();
 
 	let sidebarOpen = $state(false);
@@ -50,12 +42,6 @@
 				</Sheet.Trigger>
 				<Sheet.Content side="left" class="w-64 p-0">
 					<Sidebar
-						{currentProject}
-						{currentProjectId}
-						{projects}
-						{loading}
-						{onProjectSelect}
-						{onNewProject}
 						{user}
 						{onLogout}
 					/>
@@ -67,12 +53,6 @@
 		<div class="hidden md:block">
 			<div class="sticky top-0 h-screen">
 				<Sidebar
-					{currentProject}
-					{currentProjectId}
-					{projects}
-					{loading}
-					{onProjectSelect}
-					{onNewProject}
 					{user}
 					{onLogout}
 					collapsed={sidebar.collapsed}

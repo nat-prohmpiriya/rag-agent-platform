@@ -1,33 +1,22 @@
 <script lang="ts">
 	import { page } from '$app/stores';
+	import { goto } from '$app/navigation';
+	import { onMount } from 'svelte';
 	import { Button } from '$lib/components/ui/button';
-	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import { Separator } from '$lib/components/ui/separator';
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import * as Avatar from '$lib/components/ui/avatar';
-	import { MessageSquare, FileText, Bot, ChevronLeft, ChevronRight, FolderOpen, LogOut, User, Settings } from 'lucide-svelte';
-	import ProjectList from '$lib/components/projects/ProjectList.svelte';
-	import type { Project } from '$lib/api';
+	import { MessageSquare, MessageSquarePlus, FileText, Bot, ChevronLeft, ChevronRight, LogOut, User, Settings, Image, Folder, Trash2, Loader2 } from 'lucide-svelte';
+	import { chatStore } from '$lib/stores';
+	import type { Conversation } from '$lib/api';
 
 	let {
-		currentProject,
-		projects = [],
-		currentProjectId = null,
-		loading = false,
-		onProjectSelect,
-		onNewProject,
 		collapsed = false,
 		onToggle,
 		user,
 		onLogout
 	} = $props<{
-		currentProject?: { id: string; name: string } | null;
-		projects?: Project[];
-		currentProjectId?: string | null;
-		loading?: boolean;
-		onProjectSelect?: (projectId: string | null) => void;
-		onNewProject?: () => void;
 		collapsed?: boolean;
 		onToggle?: () => void;
 		user?: { name: string; email: string; avatar?: string } | null;
@@ -41,17 +30,73 @@
 	}
 
 	const navItems: NavItem[] = [
-		{ label: 'Chat', href: '/chat', icon: MessageSquare },
+		{ label: 'New Chat', href: '/chat', icon: MessageSquarePlus },
+		{ label: 'Chats', href: '/chats', icon: MessageSquare },
+		{ label: 'Images', href: '/images', icon: Image },
 		{ label: 'Documents', href: '/documents', icon: FileText },
+		{ label: 'Projects', href: '/projects', icon: Folder },
 		{ label: 'Agents', href: '/agents', icon: Bot }
 	];
 
+	let chatHistoryContainer: HTMLDivElement;
+	let hoveredChatId = $state<string | null>(null);
+
+	// Load initial chats
+	onMount(() => {
+		if (!chatStore.initialized) {
+			chatStore.loadInitial();
+		}
+	});
+
+	// Track current chat ID from URL
+	$effect(() => {
+		const match = $page.url.pathname.match(/^\/chat\/([^/]+)/);
+		chatStore.setCurrentId(match ? match[1] : null);
+	});
+
 	function isActive(href: string): boolean {
-		return $page.url.pathname.startsWith(href);
+		const pathname = $page.url.pathname;
+		if (href === '/chat') {
+			return pathname === '/chat';
+		}
+		return pathname.startsWith(href);
 	}
 
-	function handleProjectSelect(id: string | null) {
-		onProjectSelect?.(id);
+	function isChatActive(id: string): boolean {
+		return $page.url.pathname === `/chat/${id}`;
+	}
+
+	function getDisplayTitle(conv: Conversation): string {
+		if (conv.title) return conv.title;
+		if (conv.last_message_preview) {
+			return conv.last_message_preview.length > 25
+				? conv.last_message_preview.substring(0, 25) + '...'
+				: conv.last_message_preview;
+		}
+		return 'New conversation';
+	}
+
+	async function handleDeleteChat(e: MouseEvent, id: string) {
+		e.preventDefault();
+		e.stopPropagation();
+		try {
+			await chatStore.delete(id);
+			if (chatStore.currentId === id) {
+				goto('/chat');
+			}
+		} catch (e) {
+			console.error('Failed to delete:', e);
+		}
+	}
+
+	function handleScroll(e: Event) {
+		const target = e.target as HTMLDivElement;
+		const { scrollTop, scrollHeight, clientHeight } = target;
+
+		// Load more when scrolled near bottom (within 50px)
+		if (scrollHeight - scrollTop - clientHeight < 50) {
+			chatStore.loadMore();
+		}
 	}
 </script>
 
@@ -96,40 +141,8 @@
 	{/if}
 	<Separator />
 
-	<!-- Project selector -->
-	{#if !collapsed}
-		<div class="p-4">
-			<ProjectList
-				{projects}
-				{currentProjectId}
-				{loading}
-				onSelect={handleProjectSelect}
-				onCreate={onNewProject ?? (() => {})}
-			/>
-		</div>
-		<Separator />
-	{:else}
-		<div class="flex justify-center p-4">
-			<Tooltip.Root>
-				<Tooltip.Trigger>
-					{#snippet child({ props })}
-						<Button {...props} variant="ghost" size="icon" onclick={onNewProject}>
-							<FolderOpen class="h-5 w-5" />
-						</Button>
-					{/snippet}
-				</Tooltip.Trigger>
-				<Tooltip.Portal>
-					<Tooltip.Content side="right">
-						{currentProject?.name || 'Select project'}
-					</Tooltip.Content>
-				</Tooltip.Portal>
-			</Tooltip.Root>
-		</div>
-		<Separator />
-	{/if}
-
 	<!-- Navigation -->
-	<ScrollArea class="flex-1 px-2 py-4">
+	<div class="px-2 py-4">
 		<nav class="flex flex-col gap-1">
 			{#each navItems as item}
 				{@const Icon = item.icon}
@@ -163,7 +176,66 @@
 				{/if}
 			{/each}
 		</nav>
-	</ScrollArea>
+	</div>
+
+	<!-- Chat History (only when expanded) -->
+	{#if !collapsed}
+		<Separator />
+		<div class="flex items-center justify-between px-4 py-2">
+			<span class="text-xs font-medium text-muted-foreground">Recent Chats</span>
+			{#if chatStore.loading}
+				<Loader2 class="h-3 w-3 animate-spin text-muted-foreground" />
+			{/if}
+		</div>
+		<div
+			bind:this={chatHistoryContainer}
+			class="flex-1 overflow-y-auto px-2"
+			onscroll={handleScroll}
+		>
+			{#if chatStore.loading && chatStore.conversations.length === 0}
+				<!-- Loading skeleton -->
+				<div class="space-y-1">
+					{#each Array(5) as _}
+						<div class="h-8 animate-pulse rounded-lg bg-muted"></div>
+					{/each}
+				</div>
+			{:else if chatStore.conversations.length === 0}
+				<div class="flex flex-col items-center justify-center py-4 text-center text-muted-foreground">
+					<MessageSquare class="mb-2 h-6 w-6 opacity-50" />
+					<p class="text-xs">No chats yet</p>
+				</div>
+			{:else}
+				<div class="space-y-0.5">
+					{#each chatStore.conversations as conv (conv.id)}
+						<a
+							href="/chat/{conv.id}"
+							class="group flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-sm transition-colors hover:bg-accent {isChatActive(conv.id) ? 'bg-accent' : ''}"
+							onmouseenter={() => (hoveredChatId = conv.id)}
+							onmouseleave={() => (hoveredChatId = null)}
+						>
+							<MessageSquare class="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+							<span class="flex-1 truncate text-xs">{getDisplayTitle(conv)}</span>
+							{#if hoveredChatId === conv.id}
+								<button
+									class="shrink-0 rounded p-0.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+									onclick={(e) => handleDeleteChat(e, conv.id)}
+								>
+									<Trash2 class="h-3.5 w-3.5" />
+								</button>
+							{/if}
+						</a>
+					{/each}
+				</div>
+
+				<!-- Load more indicator -->
+				{#if chatStore.loadingMore}
+					<div class="flex justify-center py-2">
+						<Loader2 class="h-4 w-4 animate-spin text-muted-foreground" />
+					</div>
+				{/if}
+			{/if}
+		</div>
+	{/if}
 
 	<!-- User Avatar & Toggle button -->
 	<div class="border-t p-2">

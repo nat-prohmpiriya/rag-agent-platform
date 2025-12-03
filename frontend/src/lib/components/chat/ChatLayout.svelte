@@ -34,7 +34,7 @@
 	}
 </script>
 
-<div class="flex h-[calc(100vh-3.5rem)] overflow-hidden">
+<div class="flex h-screen overflow-hidden">
 	<!-- Desktop: Chat history sidebar -->
 	<div class="hidden lg:block">
 		<ChatHistorySidebar

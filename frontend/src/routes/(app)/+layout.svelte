@@ -1,16 +1,11 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import { goto } from '$app/navigation';
-	import { auth, projectStore } from '$lib/stores';
+	import { auth } from '$lib/stores';
 	import { getUserDisplayName } from '$lib/types';
 	import AppLayout from '$lib/components/layout/AppLayout.svelte';
-	import ProjectDialog from '$lib/components/projects/ProjectDialog.svelte';
-	import type { ProjectCreate, ProjectUpdate } from '$lib/api';
 
 	let { children }: { children: Snippet } = $props();
-
-	// Project dialog state
-	let showProjectDialog = $state(false);
 
 	// Auth guard - redirect to login if not authenticated
 	$effect(() => {
@@ -19,36 +14,9 @@
 		}
 	});
 
-	// Load projects when auth is ready
-	$effect(() => {
-		if (auth.isAuthenticated && !projectStore.initialized && !projectStore.loading) {
-			projectStore.initialize();
-			projectStore.loadProjects();
-		}
-	});
-
 	function handleLogout() {
-		projectStore.clear();
 		auth.logout();
 		goto('/login');
-	}
-
-	function handleNewProject() {
-		showProjectDialog = true;
-	}
-
-	function handleProjectSelect(projectId: string | null) {
-		projectStore.selectProject(projectId);
-	}
-
-	async function handleProjectSave(data: ProjectCreate | ProjectUpdate) {
-		try {
-			const project = await projectStore.createProject(data as ProjectCreate);
-			projectStore.selectProject(project.id);
-			showProjectDialog = false;
-		} catch (e) {
-			console.error('Failed to create project:', e);
-		}
 	}
 </script>
 
@@ -77,21 +45,8 @@
 {:else if auth.isAuthenticated}
 	<AppLayout
 		user={auth.user ? { name: getUserDisplayName(auth.user), email: auth.user.email } : null}
-		currentProject={projectStore.currentProject}
-		currentProjectId={projectStore.currentProjectId}
-		projects={projectStore.projects}
-		loading={projectStore.loading}
 		onLogout={handleLogout}
-		onNewProject={handleNewProject}
-		onProjectSelect={handleProjectSelect}
 	>
 		{@render children()}
 	</AppLayout>
-
-	<!-- Create Project Dialog -->
-	<ProjectDialog
-		bind:open={showProjectDialog}
-		project={null}
-		onSave={handleProjectSave}
-	/>
 {/if}
