@@ -60,7 +60,7 @@ app/
 ├── providers/           # External integrations
 │   ├── __init__.py
 │   ├── llm.py           # LiteLLM client
-│   ├── vector_store.py  # ChromaDB client
+│   ├── vector_store.py  # pgvector client
 │   └── embeddings.py    # Sentence-transformers
 │
 ├── middleware/          # Request middleware

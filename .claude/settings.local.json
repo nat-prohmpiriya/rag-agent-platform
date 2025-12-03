@@ -11,7 +11,9 @@
       "Bash(npm install:*)",
       "Bash(npx shadcn-svelte@latest add alert-dialog:*)",
       "Bash(uv run ruff check:*)",
-      "Bash(uv run python:*)"
+      "Bash(uv run python:*)",
+      "WebSearch",
+      "WebFetch(domain:docs.openwebui.com)"
     ],
     "deny": [],
     "ask": []

@@ -8,7 +8,7 @@
 | **Date** | December 2024 |
 | **Author** | - |
 | **Status** | In Development |
-| **Changes v4** | Fine-tuning → Optional, Advanced Tools, Multi-Agent Orchestration |
+| **Changes v4** | PII + Fine-tuning → Optional, Advanced Tools, Multi-Agent Orchestration |
 
 ---
 
@@ -626,92 +626,86 @@ Shows:
 
 ---
 
-## 📁 Project Structure
+## 📁 Project Structure (Actual)
 
 ```
-rag-agent-platform/
+llm-application-framework/
 ├── backend/
 │   ├── app/
-│   │   ├── api/
-│   │   │   ├── __init__.py
+│   │   ├── routes/                     # API endpoints
 │   │   │   ├── auth.py
 │   │   │   ├── chat.py
 │   │   │   ├── projects.py
 │   │   │   ├── documents.py
 │   │   │   ├── agents.py
-│   │   │   ├── admin.py
-│   │   │   ├── database.py
-│   │   │   └── finetune.py
+│   │   │   ├── conversations.py
+│   │   │   └── health.py
 │   │   │
 │   │   ├── core/
-│   │   │   ├── config.py
 │   │   │   ├── security.py
 │   │   │   ├── database.py
-│   │   │   ├── llm_client.py
-│   │   │   ├── telemetry.py        # ⭐ NEW - OTEL setup, @traced decorator
-│   │   │   └── context.py          # ⭐ NEW - RequestContext
+│   │   │   ├── dependencies.py
+│   │   │   ├── exceptions.py
+│   │   │   ├── telemetry.py
+│   │   │   └── context.py
 │   │   │
-│   │   ├── privacy/                    # ⭐ NEW v3
-│   │   │   ├── __init__.py
-│   │   │   ├── pii_scrubber.py         # Presidio integration
-│   │   │   ├── thai_recognizers.py     # Thai PII patterns
-│   │   │   ├── audit_logger.py         # PII audit logging
-│   │   │   └── middleware.py           # Auto-scrub middleware
-│   │   │
-│   │   ├── middleware/                  # ⭐ NEW
-│   │   │   ├── __init__.py
-│   │   │   └── trace.py                 # Create RequestContext per request
+│   │   ├── middleware/
+│   │   │   └── trace.py
 │   │   │
 │   │   ├── models/
 │   │   │   ├── user.py
 │   │   │   ├── project.py
 │   │   │   ├── conversation.py
+│   │   │   ├── message.py
 │   │   │   ├── document.py
-│   │   │   ├── db_connection.py
-│   │   │   ├── finetune_job.py
-│   │   │   └── pii_audit.py            # ⭐ NEW v3
+│   │   │   ├── chunk.py
+│   │   │   ├── agent.py
+│   │   │   └── project_document.py
 │   │   │
-│   │   ├── rag/
-│   │   │   ├── embeddings.py
-│   │   │   ├── chunking.py
-│   │   │   ├── retriever.py
-│   │   │   └── pipeline.py
+│   │   ├── schemas/
+│   │   │   ├── auth.py
+│   │   │   ├── user.py
+│   │   │   ├── project.py
+│   │   │   ├── document.py
+│   │   │   ├── conversation.py
+│   │   │   ├── chat.py
+│   │   │   ├── agent.py
+│   │   │   └── vector.py
+│   │   │
+│   │   ├── services/
+│   │   │   ├── auth.py
+│   │   │   ├── project.py
+│   │   │   ├── document.py
+│   │   │   ├── document_processor.py
+│   │   │   ├── conversation.py
+│   │   │   ├── agent.py
+│   │   │   ├── agent_loader.py
+│   │   │   ├── rag.py
+│   │   │   ├── embedding.py
+│   │   │   ├── vector_store.py
+│   │   │   ├── storage.py
+│   │   │   └── models.py
+│   │   │
+│   │   ├── providers/
+│   │   │   └── llm.py
 │   │   │
 │   │   ├── agents/
-│   │   │   ├── base.py
 │   │   │   ├── engine.py
-│   │   │   ├── tools/
-│   │   │   │   ├── rag_search.py
-│   │   │   │   ├── summarize.py
-│   │   │   │   ├── sql_query.py
-│   │   │   │   └── chart_gen.py
-│   │   │   └── prebuilt/
-│   │   │       ├── general.py
-│   │   │       ├── hr.py
-│   │   │       ├── legal.py
-│   │   │       ├── finance.py
-│   │   │       ├── data_analyst.py
-│   │   │       └── mental_health.py    # ⭐ NEW v3
+│   │   │   └── tools/
+│   │   │       ├── base.py
+│   │   │       ├── rag_search.py
+│   │   │       ├── summarize.py
+│   │   │       └── calculator.py
 │   │   │
-│   │   ├── text2sql/
-│   │   │   ├── __init__.py
-│   │   │   ├── schema_linker.py        # ⭐ NEW v3 - RAG on schema
-│   │   │   ├── generator.py
-│   │   │   ├── validator.py
-│   │   │   ├── executor.py
-│   │   │   ├── confirmation.py         # ⭐ NEW v3 - User confirm
-│   │   │   └── visualizer.py
-│   │   │
-│   │   ├── finetune/
-│   │   │   ├── __init__.py
-│   │   │   ├── job_dispatcher.py       # ⭐ UPDATED v3
-│   │   │   ├── job_queue.py
-│   │   │   ├── data_prep.py
-│   │   │   └── hub.py
-│   │   │
+│   │   ├── config.py
 │   │   └── main.py
 │   │
-│   └── requirements.txt
+│   ├── configs/agents/                 # Agent YAML configs
+│   │   ├── general.yaml
+│   │   ├── research.yaml
+│   │   └── ...
+│   │
+│   └── pyproject.toml
 │
 ├── frontend/
 │   ├── src/
@@ -719,50 +713,36 @@ rag-agent-platform/
 │   │   │   ├── +page.svelte
 │   │   │   ├── +layout.svelte
 │   │   │   ├── login/
-│   │   │   ├── projects/
-│   │   │   ├── settings/
-│   │   │   ├── database/
-│   │   │   ├── finetune/
-│   │   │   ├── privacy/                # ⭐ NEW v3
-│   │   │   └── admin/
+│   │   │   ├── register/
+│   │   │   └── (app)/                  # Protected routes
+│   │   │       ├── +layout.svelte
+│   │   │       ├── dashboard/
+│   │   │       ├── chat/[id]/
+│   │   │       ├── projects/[id]/
+│   │   │       ├── documents/
+│   │   │       ├── agents/
+│   │   │       ├── settings/           # Pending
+│   │   │       ├── sql-query/          # Pending
+│   │   │       └── fine-tuning/        # Optional
+│   │   │
 │   │   ├── lib/
 │   │   │   ├── components/
-│   │   │   │   ├── Chat/
-│   │   │   │   ├── Sidebar/
-│   │   │   │   ├── AgentSelector/
-│   │   │   │   ├── SQLConfirm/         # ⭐ NEW v3
-│   │   │   │   ├── PIIIndicator/       # ⭐ NEW v3
-│   │   │   │   └── DebugPanel/
-│   │   │   └── stores/
+│   │   │   │   ├── ui/                 # shadcn-svelte
+│   │   │   │   ├── llm-chat/
+│   │   │   │   ├── sidebar/
+│   │   │   │   └── ...
+│   │   │   ├── stores/
+│   │   │   ├── api/
+│   │   │   └── types/
+│   │   │
 │   │   └── app.html
+│   │
 │   └── package.json
 │
-├── training/                           # Worker scripts for GPU cloud
-│   ├── worker.py                       # Main worker loop
-│   ├── train_embedding.py
-│   ├── train_classifier.py
-│   ├── train_lora.py
-│   └── colab_notebook.ipynb           # Ready-to-run Colab notebook
-│
-├── configs/
-│   ├── agents/
-│   │   └── mental_health.yaml          # ⭐ NEW v3
-│   └── pii/                            # ⭐ NEW v3
-│       ├── thai_patterns.yaml
-│       └── entity_config.yaml
-│
-├── docker/
-│   ├── Dockerfile
-│   ├── docker-compose.yml
-│   └── docker-compose.dev.yml          # Uses SQLite
-│
-└── docs/
-    ├── API.md
-    ├── DEPLOYMENT.md
-    ├── AGENTS.md
-    ├── TEXT2SQL.md
-    ├── FINETUNING.md
-    └── PII_PROTECTION.md               # ⭐ NEW v3
+├── .docs/                              # Project documentation
+├── .claude/                            # Claude Code configs
+├── docker-compose.yml
+└── CLAUDE.md
 ```
 
 ---
@@ -777,7 +757,7 @@ rag-agent-platform/
 - [ ] Setup GitHub Actions CI/CD
 - [ ] FastAPI backend skeleton
 - [ ] SvelteKit frontend skeleton
-- [ ] **SQLite for development** ⭐ v3
+- [x] PostgreSQL + pgvector for dev & production
 - [ ] User authentication (register/login)
 - [ ] Basic chat UI (no RAG yet)
 - [ ] LiteLLM integration (single model)
@@ -998,17 +978,21 @@ rag-agent-platform/
 
 | Phase | Week | Features |
 |-------|------|----------|
-| 1. Foundation | 1-2 | Auth, Chat, LiteLLM |
-| 2. RAG Core | 3-4 | Documents, Embeddings, Retrieval |
-| 3. PII Protection | 5 | Presidio, Audit logging |
-| 4. Agent System | 6-7 | Multi-agent, User agents |
-| 5. Text-to-SQL | 8-9 | Schema Linking, User Confirm |
-| 6. Project System | 10 | Multi-project, PostgreSQL |
-| 7. Advanced Tools | 11 | Code executor, Multi-agent orchestration |
-| 8. Polish | 12 | Production-ready |
-| 9. Fine-tuning | Optional | Job Dispatcher (if needed) |
+| 1. Foundation | 1-2 | Auth, Chat, LiteLLM ✅ |
+| 2. RAG Core | 3-4 | Documents, Embeddings, Retrieval ✅ |
+| 3. Agent System | 5-6 | Multi-agent, User agents 🔄 |
+| 4. Text-to-SQL | 7-8 | Schema Linking, User Confirm |
+| 5. Project System | 9 | Multi-project ✅ |
+| 6. Advanced Tools | 10-11 | Code executor, Multi-agent orchestration |
+| 7. Polish | 12 | Production-ready |
 
-**Total: 12 weeks (3 months)** + Optional Phase 9
+### Optional (On Request)
+| Feature | When to implement |
+|---------|-------------------|
+| **PII Protection** | เมื่อมี target ที่ต้องการ (Mental Health, Medical) |
+| **Fine-tuning** | เมื่อ RAG + Prompting ไม่เพียงพอ |
+
+**Total: 12 weeks (3 months)**
 
 ---
 
@@ -1023,5 +1007,5 @@ rag-agent-platform/
 
 ---
 
-*Document Version 4.0 - December 2024*
-*Changes: Fine-tuning → Optional, Added Advanced Tools & Multi-Agent*
+*Document Version 4.1 - December 2024*
+*Changes: PII + Fine-tuning → Optional, Added Advanced Tools & Multi-Agent*

@@ -9,7 +9,7 @@ This is a **RAG (Retrieval-Augmented Generation) Agent Platform** built as a ful
 | **Frontend** | SvelteKit 2.x + Svelte 5 (Runes) + Tailwind CSS v4 + shadcn-svelte |
 | **Backend** | FastAPI (Python 3.12+) + SQLAlchemy async + PostgreSQL |
 | **LLM Gateway** | LiteLLM Proxy (unified API for OpenAI, Gemini, Groq) |
-| **Vector Store** | ChromaDB |
+| **Vector Store** | pgvector (PostgreSQL) |
 | **Auth** | JWT + Refresh Token |
 | **Observability** | OpenTelemetry + Jaeger |
 
@@ -70,7 +70,7 @@ Request → Middleware → Routes → Services → Models/Providers → Response
 | **Services** | Business logic, DB queries (no HTTP knowledge) |
 | **Models** | SQLAlchemy ORM (no business logic) |
 | **Schemas** | Pydantic request/response validation |
-| **Providers** | External API clients (LiteLLM, ChromaDB) |
+| **Providers** | External API clients (LiteLLM) |
 | **Core** | Shared utilities (security, database, context) |
 
 ### Frontend Structure

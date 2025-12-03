@@ -1,1 +1,1 @@
-# External Integrations (LiteLLM, ChromaDB, etc.)
+# External Integrations (LiteLLM, etc.)

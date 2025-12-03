@@ -544,7 +544,7 @@ Production Environment
 • VPS: Hetzner CX32 (EU) - €6.80/mo
 • PaaS: Coolify (self-hosted)
 • Database: PostgreSQL
-• Vector DB: ChromaDB
+• Vector DB: pgvector (PostgreSQL)
 • CDN: Cloudflare (free)
 • Domain: ~฿500/year
 

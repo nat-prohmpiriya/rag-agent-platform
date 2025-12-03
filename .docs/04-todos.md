@@ -7,7 +7,7 @@
 | **Version** | 2.0 |
 | **Date** | December 2024 |
 | **Status** | In Progress |
-| **Spec Version** | v3 (synced) |
+| **Spec Version** | v4 (synced) |
 
 ---
 
@@ -323,35 +323,29 @@
 
 ---
 
-## Phase 7: Fine-tuning Module (Job Dispatcher)
+## Phase 7: Advanced Tools & Multi-Agent
 
-### 7.1 Job Dispatcher API
-- [ ] Create FinetuneJob model
-- [ ] Implement job CRUD endpoints
-- [ ] Create job queue (PostgreSQL-based)
-- [ ] Add job status tracking (pending/running/completed/failed)
-- [ ] Create worker poll endpoint (/jobs/pending)
+### 7.1 Advanced Tools
+- [ ] Create Code Executor tool (Python/JS in Docker sandbox)
+- [ ] Create API Caller tool (external API integration)
+- [ ] Create File Manager tool (read/write user files)
+- [ ] Create Web Scraper tool (extract web content)
+- [ ] Add tool safety measures (rate limiting, sandboxing)
 
-### 7.2 Training Data Preparation
-- [ ] Create training data upload endpoint
-- [ ] Implement data validation
-- [ ] Create data format converters
-- [ ] Add data storage (for worker download)
+### 7.2 Multi-Agent Orchestration
+- [ ] Create Orchestrator Agent (task delegation)
+- [ ] Implement agent-to-agent communication
+- [ ] Create specialized agents (Research, Coder, Writer)
+- [ ] Add task result aggregation
 
-### 7.3 GPU Cloud Integration
-- [ ] Create Colab worker notebook template
-- [ ] Implement Hugging Face Hub integration
-- [ ] Add Weights & Biases tracking
-- [ ] Create model deployment flow
+### 7.3 Workflow Builder
+- [ ] Create workflow model & schema
+- [ ] Implement workflow execution engine
+- [ ] Create visual workflow builder UI
+- [ ] Add trigger-based automation
+- [ ] Implement scheduled tasks
 
-### 7.4 Fine-tuning UI
-- [ ] Create fine-tuning dashboard
-- [ ] Implement job creation form
-- [ ] Add job status display
-- [ ] Show training logs/metrics
-- [ ] Create model deployment button
-
-**Phase 7 Deliverable**: User can create training jobs, track progress, use trained models
+**Phase 7 Deliverable**: Agents can use powerful tools and collaborate on complex tasks
 
 ---
 
@@ -403,6 +397,33 @@
 
 ---
 
+## Phase 9: Fine-tuning Module (Optional/Future)
+
+> ⚠️ **Optional**: ฟีเจอร์นี้ไม่จำเป็นสำหรับ MVP เนื่องจาก RAG + Prompting เพียงพอสำหรับ use case ส่วนใหญ่
+
+### 9.1 Job Dispatcher API
+- [ ] Create FinetuneJob model
+- [ ] Implement job CRUD endpoints
+- [ ] Create job queue (PostgreSQL-based)
+- [ ] Add job status tracking
+
+### 9.2 GPU Cloud Integration
+- [ ] Create Colab worker notebook template
+- [ ] Implement Hugging Face Hub integration
+- [ ] Create model deployment flow
+
+### 9.3 Fine-tuning UI
+- [ ] Create fine-tuning dashboard
+- [ ] Implement job creation form
+- [ ] Add job status display
+
+**When to implement**:
+- เมื่อต้องการ custom style/format ที่ prompting ทำไม่ได้
+- เมื่อมี training data มากพอ (>1,000 examples)
+- เมื่อ scale ใหญ่พอที่จะคุ้มค่า cost
+
+---
+
 ## Technical Debt & Improvements
 
 - [ ] Add comprehensive unit tests
@@ -420,17 +441,20 @@
 ## Notes
 
 ### Priority Order
-1. **Phase 1** - Foundation (Auth, Chat)
-2. **Phase 2** - RAG Core (Documents, Retrieval)
-3. **Phase 3** - PII Protection (Privacy) ⭐ Important for Mental Health
-4. **Phase 4** - Agent System (Multi-agent)
-5. **Phase 5** - Text-to-SQL (Schema Linking) ⭐ Key differentiator
-6. **Phase 6** - Project System (Organization)
-7. **Phase 7** - Fine-tuning (Job Dispatcher)
-8. **Phase 8** - Polish (Production-ready)
+1. **Phase 1** - Foundation (Auth, Chat) ✅
+2. **Phase 2** - RAG Core (Documents, Retrieval) ✅
+3. **Phase 3** - Agent System (Multi-agent) 🔄
+4. **Phase 4** - Text-to-SQL (Schema Linking)
+5. **Phase 5** - Project System (Organization) ✅
+6. **Phase 6** - Advanced Tools & Multi-Agent ⭐
+7. **Phase 7** - Polish (Production-ready)
+
+### Optional (On Request)
+- **PII Protection** - เมื่อมี target ที่ต้องการ (Mental Health, Medical)
+- **Fine-tuning** - เมื่อ RAG + Prompting ไม่เพียงพอ
 
 ### Current Focus
-> **Phase 4 In Progress!** Agent System: Backend done, Frontend UI done.
+> **Phase 3 In Progress!** Agent System: Backend done, Frontend UI done.
 > **Next Step**: User-Created Agents feature (Backend CRUD + Frontend Form)
 
 ### Blockers
@@ -439,4 +463,4 @@
 ---
 
 *Last updated: December 3, 2024*
-*Synced with spec v3.1 (User-Created Agents)*
+*Synced with spec v4.1 (PII → Optional)*

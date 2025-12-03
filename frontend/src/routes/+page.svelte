@@ -187,7 +187,7 @@
 					<span class="px-4 py-2 bg-muted rounded-full text-sm">SvelteKit</span>
 					<span class="px-4 py-2 bg-muted rounded-full text-sm">FastAPI</span>
 					<span class="px-4 py-2 bg-muted rounded-full text-sm">LiteLLM</span>
-					<span class="px-4 py-2 bg-muted rounded-full text-sm">ChromaDB</span>
+					<span class="px-4 py-2 bg-muted rounded-full text-sm">pgvector</span>
 					<span class="px-4 py-2 bg-muted rounded-full text-sm">PostgreSQL</span>
 					<span class="px-4 py-2 bg-muted rounded-full text-sm">Presidio</span>
 				</div>
