@@ -1,14 +1,27 @@
 """Conversation service for managing chat history."""
 
 import uuid
+from dataclasses import dataclass
 
-from sqlalchemy import func, select
+from sqlalchemy import func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.core.exceptions import NotFoundError, ForbiddenError
+from app.core.exceptions import ForbiddenError, NotFoundError
 from app.models.conversation import Conversation
 from app.models.message import Message, MessageRole
+
+
+@dataclass
+class SearchResult:
+    """Search result data class."""
+
+    conversation_id: uuid.UUID
+    title: str | None
+    snippet: str
+    match_count: int
+    rank: float
+    created_at: str
 
 
 async def list_conversations(
@@ -265,3 +278,119 @@ async def get_conversation_messages(
 
     result = await db.execute(stmt)
     return list(result.scalars().all())
+
+
+async def search_conversations(
+    db: AsyncSession,
+    user_id: uuid.UUID,
+    query: str,
+    limit: int = 20,
+) -> tuple[list[SearchResult], int]:
+    """
+    Full-text search conversations by message content.
+
+    Uses PostgreSQL tsvector with GIN index for fast search.
+    Returns highlighted snippets with <mark> tags.
+
+    Args:
+        db: Database session
+        user_id: User ID to filter by
+        query: Search query string
+        limit: Max results to return
+
+    Returns:
+        Tuple of (search results, total count)
+    """
+    if not query or not query.strip():
+        return [], 0
+
+    # Sanitize query for tsquery
+    search_terms = query.strip().split()
+    tsquery_str = " & ".join(search_terms)
+
+    # Main search query with ts_rank and ts_headline
+    search_sql = text("""
+        WITH search_results AS (
+            SELECT DISTINCT ON (c.id)
+                c.id as conversation_id,
+                c.title,
+                c.created_at,
+                ts_headline(
+                    'english',
+                    m.content,
+                    to_tsquery('english', :tsquery),
+                    'StartSel=<mark>, StopSel=</mark>, MaxWords=35, MinWords=15, MaxFragments=1'
+                ) as snippet,
+                ts_rank(m.search_vector, to_tsquery('english', :tsquery)) as rank
+            FROM messages m
+            JOIN conversations c ON c.id = m.conversation_id
+            WHERE c.user_id = :user_id
+              AND m.search_vector @@ to_tsquery('english', :tsquery)
+            ORDER BY c.id, rank DESC
+        )
+        SELECT
+            conversation_id,
+            title,
+            created_at,
+            snippet,
+            rank
+        FROM search_results
+        ORDER BY rank DESC
+        LIMIT :limit
+    """)
+
+    result = await db.execute(
+        search_sql,
+        {
+            "user_id": str(user_id),
+            "tsquery": tsquery_str,
+            "limit": limit,
+        }
+    )
+    rows = result.fetchall()
+
+    # Count total matches
+    count_sql = text("""
+        SELECT COUNT(DISTINCT c.id)
+        FROM messages m
+        JOIN conversations c ON c.id = m.conversation_id
+        WHERE c.user_id = :user_id
+          AND m.search_vector @@ to_tsquery('english', :tsquery)
+    """)
+    count_result = await db.execute(
+        count_sql,
+        {"user_id": str(user_id), "tsquery": tsquery_str}
+    )
+    total = count_result.scalar() or 0
+
+    # Count matches per conversation
+    match_count_sql = text("""
+        SELECT m.conversation_id, COUNT(*) as match_count
+        FROM messages m
+        JOIN conversations c ON c.id = m.conversation_id
+        WHERE c.user_id = :user_id
+          AND m.search_vector @@ to_tsquery('english', :tsquery)
+        GROUP BY m.conversation_id
+    """)
+    match_result = await db.execute(
+        match_count_sql,
+        {"user_id": str(user_id), "tsquery": tsquery_str}
+    )
+    match_counts = {str(row[0]): row[1] for row in match_result.fetchall()}
+
+    # Build search results
+    search_results = []
+    for row in rows:
+        conv_id = str(row.conversation_id)
+        search_results.append(
+            SearchResult(
+                conversation_id=row.conversation_id,
+                title=row.title,
+                snippet=row.snippet,
+                match_count=match_counts.get(conv_id, 1),
+                rank=float(row.rank),
+                created_at=row.created_at,
+            )
+        )
+
+    return search_results, total

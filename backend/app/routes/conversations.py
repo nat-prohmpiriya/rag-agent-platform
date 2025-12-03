@@ -14,12 +14,67 @@ from app.schemas.conversation import (
     ConversationDetailResponse,
     ConversationListResponse,
     ConversationResponse,
+    ConversationSearchResponse,
+    ConversationSearchResult,
     ConversationUpdate,
+)
+from app.schemas.conversation import (
     MessageResponse as ConversationMessageResponse,
 )
 from app.services import conversation as conversation_service
 
 router = APIRouter(prefix="/conversations", tags=["conversations"])
+
+
+@router.get("/search")
+async def search_conversations(
+    q: str = Query(..., min_length=1, max_length=200, description="Search query"),
+    limit: int = Query(default=20, ge=1, le=50, description="Max results"),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> BaseResponse[ConversationSearchResponse]:
+    """
+    Full-text search conversations by message content.
+
+    Uses PostgreSQL tsvector with GIN index for high-performance search.
+    Returns highlighted snippets with <mark> tags for frontend rendering.
+
+    Features:
+    - Millisecond search on millions of records (GIN Index)
+    - Stemming support (running/runs/ran → all match)
+    - Relevance ranking (ts_rank)
+    - Auto-highlighted snippets (ts_headline)
+    """
+    ctx = get_context()
+    ctx.user_id = current_user.id
+
+    results, total = await conversation_service.search_conversations(
+        db=db,
+        user_id=current_user.id,
+        query=q,
+        limit=limit,
+    )
+
+    items = [
+        ConversationSearchResult(
+            conversation_id=r.conversation_id,
+            title=r.title,
+            snippet=r.snippet,
+            match_count=r.match_count,
+            rank=r.rank,
+            created_at=r.created_at,
+        )
+        for r in results
+    ]
+
+    return BaseResponse(
+        trace_id=ctx.trace_id,
+        data=ConversationSearchResponse(
+            items=items,
+            total=total,
+            query=q,
+        ),
+    )
 
 
 @router.get("")

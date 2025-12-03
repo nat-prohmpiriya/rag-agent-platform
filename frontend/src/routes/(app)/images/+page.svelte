@@ -11,7 +11,7 @@
 
 <div class="flex h-full flex-col">
 	<!-- Header -->
-	<div class="border-b bg-background p-4">
+	<div class="bg-background p-4">
 		<div class="flex items-center justify-between">
 			<div class="flex items-center gap-2">
 				<Image class="size-5" />
@@ -44,7 +44,11 @@
 				<div class="grid grid-cols-2 md:grid-cols-3 gap-4">
 					{#each images as image (image.id)}
 						<div class="aspect-square rounded-lg border overflow-hidden">
-							<img src={image.url} alt={image.title} class="w-full h-full object-cover" />
+							<img
+								src={image.url}
+								alt={image.title}
+								class="w-full h-full object-cover"
+							/>
 						</div>
 					{/each}
 				</div>

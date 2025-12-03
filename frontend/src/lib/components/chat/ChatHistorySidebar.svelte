@@ -1,9 +1,11 @@
 <script lang="ts">
 	import { Button } from '$lib/components/ui/button';
+	import { Input } from '$lib/components/ui/input';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import { Separator } from '$lib/components/ui/separator';
-	import { Plus, MessageSquare, Trash2 } from 'lucide-svelte';
-	import type { Conversation } from '$lib/api/conversations';
+	import { Plus, MessageSquare, Trash2, Search, X, Loader2 } from 'lucide-svelte';
+	import type { Conversation, ConversationSearchResult } from '$lib/api/conversations';
+	import { conversationsApi } from '$lib/api/conversations';
 
 	let {
 		conversations,
@@ -20,6 +22,54 @@
 		onNew: () => void;
 		onDelete: (id: string) => void;
 	}>();
+
+	// Search state
+	let searchQuery = $state('');
+	let searchResults = $state<ConversationSearchResult[]>([]);
+	let isSearching = $state(false);
+	let searchError = $state<string | null>(null);
+	let searchTimeout: ReturnType<typeof setTimeout> | null = null;
+
+	// Debounced search
+	function handleSearchInput(value: string) {
+		searchQuery = value;
+		searchError = null;
+
+		if (searchTimeout) {
+			clearTimeout(searchTimeout);
+		}
+
+		if (!value.trim()) {
+			searchResults = [];
+			isSearching = false;
+			return;
+		}
+
+		isSearching = true;
+		searchTimeout = setTimeout(async () => {
+			try {
+				const response = await conversationsApi.search(value.trim());
+				searchResults = response.items;
+			} catch (e) {
+				console.error('Search failed:', e);
+				searchError = 'Search failed';
+				searchResults = [];
+			} finally {
+				isSearching = false;
+			}
+		}, 300);
+	}
+
+	function clearSearch() {
+		searchQuery = '';
+		searchResults = [];
+		searchError = null;
+	}
+
+	function handleSearchResultClick(conversationId: string) {
+		clearSearch();
+		onSelect(conversationId);
+	}
 
 	// Group conversations by date
 	interface GroupedConversations {
@@ -61,6 +111,7 @@
 	}
 
 	let grouped = $derived(groupConversations(conversations));
+	let isSearchMode = $derived(searchQuery.trim().length > 0);
 
 	function getDisplayTitle(conv: Conversation): string {
 		if (conv.title) return conv.title;
@@ -90,11 +141,85 @@
 		</Button>
 	</div>
 
+	<!-- Search input -->
+	<div class="px-4 pb-2">
+		<div class="relative">
+			<Search class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+			<Input
+				type="text"
+				placeholder="Search conversations..."
+				class="pl-9 pr-9"
+				value={searchQuery}
+				oninput={(e) => handleSearchInput(e.currentTarget.value)}
+			/>
+			{#if searchQuery}
+				<button
+					class="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-muted-foreground hover:text-foreground"
+					onclick={clearSearch}
+				>
+					{#if isSearching}
+						<Loader2 class="h-4 w-4 animate-spin" />
+					{:else}
+						<X class="h-4 w-4" />
+					{/if}
+				</button>
+			{/if}
+		</div>
+	</div>
+
 	<Separator />
 
-	<!-- Conversations list -->
+	<!-- Search Results or Conversations list -->
 	<ScrollArea class="flex-1">
-		{#if loading}
+		{#if isSearchMode}
+			<!-- Search Results -->
+			<div class="p-2">
+				{#if isSearching}
+					<div class="space-y-2 p-4">
+						{#each Array(3) as _}
+							<div class="h-16 animate-pulse rounded-lg bg-muted"></div>
+						{/each}
+					</div>
+				{:else if searchError}
+					<div class="flex flex-col items-center justify-center p-8 text-center text-muted-foreground">
+						<p class="text-sm text-destructive">{searchError}</p>
+					</div>
+				{:else if searchResults.length === 0}
+					<div class="flex flex-col items-center justify-center p-8 text-center text-muted-foreground">
+						<Search class="mb-2 h-8 w-8 opacity-50" />
+						<p class="text-sm">No results found</p>
+						<p class="text-xs">Try different keywords</p>
+					</div>
+				{:else}
+					<p class="mb-2 px-3 text-xs font-medium text-muted-foreground">
+						{searchResults.length} result{searchResults.length !== 1 ? 's' : ''} found
+					</p>
+					{#each searchResults as result}
+						<div
+							class="group relative mb-2 cursor-pointer rounded-lg border p-3 text-left text-sm transition-colors hover:bg-accent"
+							onclick={() => handleSearchResultClick(result.conversation_id)}
+							onkeydown={(e) => e.key === 'Enter' && handleSearchResultClick(result.conversation_id)}
+							role="button"
+							tabindex="0"
+						>
+							<div class="mb-1 flex items-center gap-2">
+								<MessageSquare class="h-4 w-4 shrink-0 text-muted-foreground" />
+								<span class="flex-1 truncate font-medium">
+									{result.title || 'Untitled conversation'}
+								</span>
+								<span class="shrink-0 text-xs text-muted-foreground">
+									{result.match_count} match{result.match_count !== 1 ? 'es' : ''}
+								</span>
+							</div>
+							<!-- Highlighted snippet with <mark> tags -->
+							<p class="line-clamp-2 text-xs text-muted-foreground [&>mark]:bg-yellow-200 [&>mark]:text-foreground dark:[&>mark]:bg-yellow-500/30">
+								{@html result.snippet}
+							</p>
+						</div>
+					{/each}
+				{/if}
+			</div>
+		{:else if loading}
 			<!-- Loading skeleton -->
 			<div class="space-y-2 p-4">
 				{#each Array(5) as _}

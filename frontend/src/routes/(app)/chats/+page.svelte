@@ -271,7 +271,7 @@
 								<h3 class="font-medium truncate">
 									{getDisplayTitle(conversation)}
 								</h3>
-								<p class="text-sm text-muted-foreground">
+								<p class="text-xs font-light text-muted-foreground">
 									Last message {formatTimeAgo(conversation.updated_at)}
 								</p>
 							</div>

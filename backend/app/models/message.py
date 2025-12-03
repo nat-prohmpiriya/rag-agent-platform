@@ -3,8 +3,8 @@
 import enum
 import uuid
 
-from sqlalchemy import Enum, ForeignKey, Integer, Text
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import Enum, ForeignKey, Index, Integer, Text
+from sqlalchemy.dialects.postgresql import TSVECTOR, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
@@ -46,6 +46,20 @@ class Message(Base, TimestampMixin):
     tokens_used: Mapped[int | None] = mapped_column(
         Integer,
         nullable=True,
+    )
+    # Full-text search vector (auto-updated by trigger)
+    search_vector: Mapped[str | None] = mapped_column(
+        TSVECTOR,
+        nullable=True,
+    )
+
+    # GIN index for full-text search
+    __table_args__ = (
+        Index(
+            'ix_messages_search_vector',
+            'search_vector',
+            postgresql_using='gin'
+        ),
     )
 
     # Relationships

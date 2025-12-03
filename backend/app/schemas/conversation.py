@@ -65,3 +65,25 @@ class ConversationDetailResponse(BaseModel):
     updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+
+# Search schemas
+class ConversationSearchResult(BaseModel):
+    """Schema for a single search result."""
+
+    conversation_id: uuid.UUID
+    title: str | None
+    snippet: str  # Highlighted snippet with <mark> tags
+    match_count: int
+    rank: float
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ConversationSearchResponse(BaseModel):
+    """Schema for search results."""
+
+    items: list[ConversationSearchResult]
+    total: int
+    query: str

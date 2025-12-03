@@ -42,6 +42,21 @@ export interface UpdateConversationRequest {
 	title: string;
 }
 
+export interface ConversationSearchResult {
+	conversation_id: string;
+	title: string | null;
+	snippet: string; // Contains <mark> tags for highlighting
+	match_count: number;
+	rank: number;
+	created_at: string;
+}
+
+export interface ConversationSearchResponse {
+	items: ConversationSearchResult[];
+	total: number;
+	query: string;
+}
+
 export const conversationsApi = {
 	/**
 	 * List conversations for current user
@@ -88,6 +103,20 @@ export const conversationsApi = {
 	delete: async (id: string): Promise<void> => {
 		return fetchApi<void>(`/api/conversations/${id}`, {
 			method: 'DELETE',
+		});
+	},
+
+	/**
+	 * Search conversations by message content (Full-text search)
+	 * Uses PostgreSQL tsvector with GIN index for high-performance search
+	 */
+	search: async (query: string, limit: number = 20): Promise<ConversationSearchResponse> => {
+		const params = new URLSearchParams({
+			q: query,
+			limit: limit.toString(),
+		});
+		return fetchApi<ConversationSearchResponse>(`/api/conversations/search?${params}`, {
+			method: 'GET',
 		});
 	},
 };
