@@ -12,6 +12,7 @@ from app.models.agent import Agent, AgentTool
 from app.models.plan import Plan, PlanType
 from app.models.subscription import Subscription, SubscriptionStatus, BillingInterval
 from app.models.invoice import Invoice, InvoiceStatus, PaymentMethod
+from app.models.audit_log import AuditLog, AuditAction
 
 __all__ = [
     "TimestampMixin",
@@ -35,4 +36,6 @@ __all__ = [
     "Invoice",
     "InvoiceStatus",
     "PaymentMethod",
+    "AuditLog",
+    "AuditAction",
 ]

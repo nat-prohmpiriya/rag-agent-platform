@@ -567,3 +567,85 @@ export async function getSystemHealth(): Promise<SystemHealth> {
 export async function getSystemMetrics(): Promise<SystemMetrics> {
 	return fetchApi<SystemMetrics>('/api/admin/system/metrics');
 }
+
+// Audit Log Types
+export interface AuditLogAdmin {
+	id: string;
+	email: string;
+	username: string;
+}
+
+export interface AuditLog {
+	id: string;
+	admin_id: string | null;
+	admin: AuditLogAdmin | null;
+	action: string;
+	description: string;
+	target_type: string | null;
+	target_id: string | null;
+	details: Record<string, unknown> | null;
+	ip_address: string | null;
+	user_agent: string | null;
+	created_at: string;
+}
+
+export interface AuditLogListResponse {
+	items: AuditLog[];
+	total: number;
+	page: number;
+	per_page: number;
+	pages: number;
+}
+
+export interface AuditActionType {
+	value: string;
+	label: string;
+}
+
+export interface AuditLogFilters {
+	action?: string;
+	admin_id?: string;
+	target_type?: string;
+	target_id?: string;
+	start_date?: string;
+	end_date?: string;
+	search?: string;
+}
+
+// Audit Log API Functions
+export async function getAuditLogs(
+	page = 1,
+	perPage = 20,
+	filters?: AuditLogFilters
+): Promise<AuditLogListResponse> {
+	const params = new URLSearchParams({
+		page: String(page),
+		per_page: String(perPage)
+	});
+
+	if (filters?.action) params.set('action', filters.action);
+	if (filters?.admin_id) params.set('admin_id', filters.admin_id);
+	if (filters?.target_type) params.set('target_type', filters.target_type);
+	if (filters?.target_id) params.set('target_id', filters.target_id);
+	if (filters?.start_date) params.set('start_date', filters.start_date);
+	if (filters?.end_date) params.set('end_date', filters.end_date);
+	if (filters?.search) params.set('search', filters.search);
+
+	return fetchApi<AuditLogListResponse>(`/api/admin/audit?${params}`);
+}
+
+export async function getAuditLog(id: string): Promise<AuditLog> {
+	return fetchApi<AuditLog>(`/api/admin/audit/${id}`);
+}
+
+export async function getAuditActionTypes(): Promise<AuditActionType[]> {
+	return fetchApi<AuditActionType[]>('/api/admin/audit/actions');
+}
+
+export async function getAuditTargetTypes(): Promise<string[]> {
+	return fetchApi<string[]>('/api/admin/audit/target-types');
+}
+
+export async function getAuditAdmins(): Promise<AuditLogAdmin[]> {
+	return fetchApi<AuditLogAdmin[]>('/api/admin/audit/admins');
+}

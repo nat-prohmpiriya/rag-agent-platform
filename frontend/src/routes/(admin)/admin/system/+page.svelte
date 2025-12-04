@@ -10,20 +10,13 @@
 		Server,
 		Zap,
 		RefreshCw,
-		CheckCircle,
-		AlertTriangle,
-		XCircle,
-		HelpCircle,
+		CircleCheck,
+		TriangleAlert,
+		CircleX,
+		Info,
 		Clock
 	} from 'lucide-svelte';
-	import {
-		getSystemHealth,
-		type SystemHealth,
-		type ServiceStatus,
-		type LiteLLMHealth,
-		type PostgreSQLHealth,
-		type RedisHealth
-	} from '$lib/api/admin';
+	import { getSystemHealth, type SystemHealth, type ServiceStatus } from '$lib/api/admin';
 
 	let health = $state<SystemHealth | null>(null);
 	let loading = $state(true);
@@ -74,19 +67,6 @@
 			startAutoRefresh();
 		} else {
 			stopAutoRefresh();
-		}
-	}
-
-	function getStatusColor(status: ServiceStatus): string {
-		switch (status) {
-			case 'healthy':
-				return 'bg-green-500';
-			case 'degraded':
-				return 'bg-yellow-500';
-			case 'unhealthy':
-				return 'bg-red-500';
-			default:
-				return 'bg-gray-500';
 		}
 	}
 
@@ -175,13 +155,13 @@
 			<Card.Content class="flex items-center justify-between py-4">
 				<div class="flex items-center gap-3">
 					{#if health.overall_status === 'healthy'}
-						<CheckCircle class="h-8 w-8 text-green-600" />
+						<CircleCheck class="h-8 w-8 text-green-600" />
 					{:else if health.overall_status === 'degraded'}
-						<AlertTriangle class="h-8 w-8 text-yellow-600" />
+						<TriangleAlert class="h-8 w-8 text-yellow-600" />
 					{:else if health.overall_status === 'unhealthy'}
-						<XCircle class="h-8 w-8 text-red-600" />
+						<CircleX class="h-8 w-8 text-red-600" />
 					{:else}
-						<HelpCircle class="h-8 w-8 text-gray-600" />
+						<Info class="h-8 w-8 text-gray-600" />
 					{/if}
 					<div>
 						<h2 class="text-lg font-semibold">

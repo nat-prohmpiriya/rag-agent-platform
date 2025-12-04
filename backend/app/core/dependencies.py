@@ -116,3 +116,34 @@ async def require_admin(
         raise ForbiddenError("Admin access required")
 
     return current_user
+
+
+class RequestMetadata:
+    """Request metadata for audit logging."""
+
+    def __init__(self, ip_address: str | None, user_agent: str | None):
+        self.ip_address = ip_address
+        self.user_agent = user_agent
+
+
+async def get_request_metadata(request=None) -> RequestMetadata:
+    """
+    Dependency to get request metadata for audit logging.
+
+    Note: This needs the Request object, so it should be called with
+    request parameter when used directly.
+    """
+    from fastapi import Request
+
+    if request is None or not isinstance(request, Request):
+        return RequestMetadata(ip_address=None, user_agent=None)
+
+    # Get client IP (considering proxies)
+    ip_address = request.client.host if request.client else None
+    forwarded_for = request.headers.get("x-forwarded-for")
+    if forwarded_for:
+        ip_address = forwarded_for.split(",")[0].strip()
+
+    user_agent = request.headers.get("user-agent")
+
+    return RequestMetadata(ip_address=ip_address, user_agent=user_agent)

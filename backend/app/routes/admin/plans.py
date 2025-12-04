@@ -2,11 +2,12 @@
 
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.context import get_context
 from app.core.dependencies import get_db, require_admin
+from app.models.audit_log import AuditAction
 from app.models.user import User
 from app.schemas.base import BaseResponse, MessageResponse
 from app.schemas.plan import (
@@ -16,6 +17,7 @@ from app.schemas.plan import (
     PlanUpdate,
     PlanWithSubscriberCountResponse,
 )
+from app.services import audit_log as audit_service
 from app.services import plan as plan_service
 
 router = APIRouter(prefix="/plans", tags=["admin-plans"])
@@ -69,8 +71,9 @@ async def list_plans(
 @router.post("", status_code=201)
 async def create_plan(
     data: PlanCreate,
+    request: Request,
     db: AsyncSession = Depends(get_db),
-    _admin: User = Depends(require_admin),
+    admin: User = Depends(require_admin),
 ) -> BaseResponse[PlanResponse]:
     """Create a new plan (admin only)."""
     ctx = get_context()
@@ -81,6 +84,22 @@ async def create_plan(
         raise HTTPException(status_code=409, detail="Plan name already exists")
 
     plan = await plan_service.create_plan(db=db, data=data)
+
+    # Audit log
+    ip_address = request.client.host if request.client else None
+    user_agent = request.headers.get("user-agent")
+    await audit_service.create_audit_log(
+        db=db,
+        admin_id=admin.id,
+        action=AuditAction.PLAN_CREATE.value,
+        description=f"Created plan {data.name}",
+        target_type="plan",
+        target_id=plan.id,
+        details={"plan_name": data.name, "price_monthly": data.price_monthly},
+        ip_address=ip_address,
+        user_agent=user_agent,
+    )
+
     await db.commit()
     await db.refresh(plan)
 
@@ -118,8 +137,9 @@ async def get_plan(
 async def update_plan(
     plan_id: uuid.UUID,
     data: PlanUpdate,
+    request: Request,
     db: AsyncSession = Depends(get_db),
-    _admin: User = Depends(require_admin),
+    admin: User = Depends(require_admin),
 ) -> BaseResponse[PlanResponse]:
     """Update a plan (admin only)."""
     ctx = get_context()
@@ -134,6 +154,21 @@ async def update_plan(
 
     if not plan:
         raise HTTPException(status_code=404, detail="Plan not found")
+
+    # Audit log
+    ip_address = request.client.host if request.client else None
+    user_agent = request.headers.get("user-agent")
+    await audit_service.create_audit_log(
+        db=db,
+        admin_id=admin.id,
+        action=AuditAction.PLAN_UPDATE.value,
+        description=f"Updated plan {plan.name}",
+        target_type="plan",
+        target_id=plan_id,
+        details=data.model_dump(exclude_unset=True),
+        ip_address=ip_address,
+        user_agent=user_agent,
+    )
 
     await db.commit()
     await db.refresh(plan)
@@ -151,11 +186,16 @@ async def update_plan(
 @router.delete("/{plan_id}")
 async def delete_plan(
     plan_id: uuid.UUID,
+    request: Request,
     db: AsyncSession = Depends(get_db),
-    _admin: User = Depends(require_admin),
+    admin: User = Depends(require_admin),
 ) -> BaseResponse[MessageResponse]:
     """Delete a plan (admin only). Cannot delete plans with active subscribers."""
     ctx = get_context()
+
+    # Get plan info before deletion for audit log
+    plan = await plan_service.get_plan(db, plan_id)
+    plan_name = plan.name if plan else "unknown"
 
     try:
         deleted = await plan_service.delete_plan(db=db, plan_id=plan_id)
@@ -164,6 +204,21 @@ async def delete_plan(
 
     if not deleted:
         raise HTTPException(status_code=404, detail="Plan not found")
+
+    # Audit log
+    ip_address = request.client.host if request.client else None
+    user_agent = request.headers.get("user-agent")
+    await audit_service.create_audit_log(
+        db=db,
+        admin_id=admin.id,
+        action=AuditAction.PLAN_DELETE.value,
+        description=f"Deleted plan {plan_name}",
+        target_type="plan",
+        target_id=plan_id,
+        details={"deleted_plan_name": plan_name},
+        ip_address=ip_address,
+        user_agent=user_agent,
+    )
 
     await db.commit()
 

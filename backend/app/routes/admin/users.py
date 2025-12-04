@@ -2,11 +2,12 @@
 
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.context import get_context
 from app.core.dependencies import get_db, require_admin
+from app.models.audit_log import AuditAction
 from app.models.user import User
 from app.schemas.admin import (
     AdminUserListResponse,
@@ -21,6 +22,7 @@ from app.schemas.admin import (
 )
 from app.schemas.base import BaseResponse, MessageResponse
 from app.services import admin_users as user_service
+from app.services import audit_log as audit_service
 
 router = APIRouter(prefix="/users", tags=["admin-users"])
 
@@ -117,8 +119,9 @@ async def get_user_detail(
 async def update_user(
     user_id: uuid.UUID,
     data: AdminUserUpdate,
+    request: Request,
     db: AsyncSession = Depends(get_db),
-    _admin: User = Depends(require_admin),
+    admin: User = Depends(require_admin),
 ) -> BaseResponse[MessageResponse]:
     """Update a user (admin only)."""
     ctx = get_context()
@@ -127,6 +130,21 @@ async def update_user(
 
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+
+    # Audit log
+    ip_address = request.client.host if request.client else None
+    user_agent = request.headers.get("user-agent")
+    await audit_service.create_audit_log(
+        db=db,
+        admin_id=admin.id,
+        action=AuditAction.USER_UPDATE.value,
+        description=f"Updated user {user.email}",
+        target_type="user",
+        target_id=user_id,
+        details=data.model_dump(exclude_unset=True),
+        ip_address=ip_address,
+        user_agent=user_agent,
+    )
 
     await db.commit()
 
@@ -140,8 +158,9 @@ async def update_user(
 async def change_user_plan(
     user_id: uuid.UUID,
     data: ChangeUserPlanRequest,
+    request: Request,
     db: AsyncSession = Depends(get_db),
-    _admin: User = Depends(require_admin),
+    admin: User = Depends(require_admin),
 ) -> BaseResponse[MessageResponse]:
     """Change a user's subscription plan (admin only)."""
     ctx = get_context()
@@ -154,6 +173,21 @@ async def change_user_plan(
 
     if not subscription:
         raise HTTPException(status_code=404, detail="User or plan not found")
+
+    # Audit log
+    ip_address = request.client.host if request.client else None
+    user_agent = request.headers.get("user-agent")
+    await audit_service.create_audit_log(
+        db=db,
+        admin_id=admin.id,
+        action=AuditAction.SUBSCRIPTION_UPGRADE.value,
+        description=f"Changed plan for user {user_id} to plan {data.plan_id}",
+        target_type="subscription",
+        target_id=subscription.id,
+        details={"user_id": str(user_id), "new_plan_id": str(data.plan_id)},
+        ip_address=ip_address,
+        user_agent=user_agent,
+    )
 
     await db.commit()
 
@@ -168,9 +202,10 @@ async def change_user_plan(
 @router.post("/{user_id}/suspend")
 async def suspend_user(
     user_id: uuid.UUID,
+    request: Request,
     data: SuspendUserRequest | None = None,
     db: AsyncSession = Depends(get_db),
-    _admin: User = Depends(require_admin),
+    admin: User = Depends(require_admin),
 ) -> BaseResponse[MessageResponse]:
     """Suspend a user account (admin only)."""
     ctx = get_context()
@@ -180,6 +215,21 @@ async def suspend_user(
 
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+
+    # Audit log
+    ip_address = request.client.host if request.client else None
+    user_agent = request.headers.get("user-agent")
+    await audit_service.create_audit_log(
+        db=db,
+        admin_id=admin.id,
+        action=AuditAction.USER_SUSPEND.value,
+        description=f"Suspended user {user.email}",
+        target_type="user",
+        target_id=user_id,
+        details={"reason": reason} if reason else None,
+        ip_address=ip_address,
+        user_agent=user_agent,
+    )
 
     await db.commit()
 
@@ -194,8 +244,9 @@ async def suspend_user(
 @router.post("/{user_id}/activate")
 async def activate_user(
     user_id: uuid.UUID,
+    request: Request,
     db: AsyncSession = Depends(get_db),
-    _admin: User = Depends(require_admin),
+    admin: User = Depends(require_admin),
 ) -> BaseResponse[MessageResponse]:
     """Activate a suspended user account (admin only)."""
     ctx = get_context()
@@ -204,6 +255,20 @@ async def activate_user(
 
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+
+    # Audit log
+    ip_address = request.client.host if request.client else None
+    user_agent = request.headers.get("user-agent")
+    await audit_service.create_audit_log(
+        db=db,
+        admin_id=admin.id,
+        action=AuditAction.USER_ACTIVATE.value,
+        description=f"Activated user {user.email}",
+        target_type="user",
+        target_id=user_id,
+        ip_address=ip_address,
+        user_agent=user_agent,
+    )
 
     await db.commit()
 
@@ -216,9 +281,10 @@ async def activate_user(
 @router.post("/{user_id}/ban")
 async def ban_user(
     user_id: uuid.UUID,
+    request: Request,
     data: SuspendUserRequest | None = None,
     db: AsyncSession = Depends(get_db),
-    _admin: User = Depends(require_admin),
+    admin: User = Depends(require_admin),
 ) -> BaseResponse[MessageResponse]:
     """Ban a user account (admin only)."""
     ctx = get_context()
@@ -228,6 +294,21 @@ async def ban_user(
 
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+
+    # Audit log
+    ip_address = request.client.host if request.client else None
+    user_agent = request.headers.get("user-agent")
+    await audit_service.create_audit_log(
+        db=db,
+        admin_id=admin.id,
+        action=AuditAction.USER_BAN.value,
+        description=f"Banned user {user.email}",
+        target_type="user",
+        target_id=user_id,
+        details={"reason": reason} if reason else None,
+        ip_address=ip_address,
+        user_agent=user_agent,
+    )
 
     await db.commit()
 
@@ -242,16 +323,41 @@ async def ban_user(
 @router.delete("/{user_id}")
 async def delete_user(
     user_id: uuid.UUID,
+    request: Request,
     db: AsyncSession = Depends(get_db),
-    _admin: User = Depends(require_admin),
+    admin: User = Depends(require_admin),
 ) -> BaseResponse[MessageResponse]:
     """Delete a user and all their data (admin only)."""
     ctx = get_context()
+
+    # Get user info before deletion for audit log
+    users, _ = await user_service.get_users_with_details(
+        db=db,
+        page=1,
+        per_page=1,
+        search=str(user_id),
+    )
+    user_email = users[0]["email"] if users else "unknown"
 
     deleted = await user_service.delete_user(db=db, user_id=user_id)
 
     if not deleted:
         raise HTTPException(status_code=404, detail="User not found")
+
+    # Audit log
+    ip_address = request.client.host if request.client else None
+    user_agent = request.headers.get("user-agent")
+    await audit_service.create_audit_log(
+        db=db,
+        admin_id=admin.id,
+        action=AuditAction.USER_DELETE.value,
+        description=f"Deleted user {user_email}",
+        target_type="user",
+        target_id=user_id,
+        details={"deleted_email": user_email},
+        ip_address=ip_address,
+        user_agent=user_agent,
+    )
 
     await db.commit()
 

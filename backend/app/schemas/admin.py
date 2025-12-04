@@ -440,3 +440,94 @@ class SystemMetrics(BaseModel):
     error_rate_percent: float = 0
     active_users: int = 0
     uptime_seconds: float = 0
+
+
+# Audit Log schemas
+class AuditActionType(str, Enum):
+    """Audit action type enumeration."""
+
+    # User actions
+    USER_CREATE = "user_create"
+    USER_UPDATE = "user_update"
+    USER_DELETE = "user_delete"
+    USER_SUSPEND = "user_suspend"
+    USER_ACTIVATE = "user_activate"
+    USER_BAN = "user_ban"
+
+    # Plan actions
+    PLAN_CREATE = "plan_create"
+    PLAN_UPDATE = "plan_update"
+    PLAN_DELETE = "plan_delete"
+
+    # Subscription actions
+    SUBSCRIPTION_CREATE = "subscription_create"
+    SUBSCRIPTION_UPGRADE = "subscription_upgrade"
+    SUBSCRIPTION_DOWNGRADE = "subscription_downgrade"
+    SUBSCRIPTION_CANCEL = "subscription_cancel"
+
+    # Billing actions
+    REFUND_ISSUE = "refund_issue"
+    INVOICE_VOID = "invoice_void"
+
+    # System actions
+    SETTINGS_UPDATE = "settings_update"
+    SYSTEM_CONFIG = "system_config"
+
+
+class AuditLogAdmin(BaseModel):
+    """Admin info in audit log."""
+
+    id: uuid.UUID
+    email: str
+    username: str
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class AuditLogResponse(BaseModel):
+    """Single audit log entry response."""
+
+    id: uuid.UUID
+    admin_id: uuid.UUID | None
+    admin: AuditLogAdmin | None
+    action: str
+    description: str
+    target_type: str | None
+    target_id: uuid.UUID | None
+    details: dict | None
+    ip_address: str | None
+    user_agent: str | None
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class AuditLogListResponse(BaseModel):
+    """Paginated audit log list response."""
+
+    items: list[AuditLogResponse]
+    total: int
+    page: int
+    per_page: int
+    pages: int
+
+
+class AuditLogCreate(BaseModel):
+    """Schema for creating an audit log entry."""
+
+    action: str
+    description: str
+    target_type: str | None = None
+    target_id: uuid.UUID | None = None
+    details: dict | None = None
+
+
+class AuditLogFilter(BaseModel):
+    """Filter options for audit logs."""
+
+    action: str | None = None
+    admin_id: uuid.UUID | None = None
+    target_type: str | None = None
+    target_id: uuid.UUID | None = None
+    start_date: datetime | None = None
+    end_date: datetime | None = None
