@@ -98,7 +98,7 @@ VERIFICATION:
 
 ---
 
-## Task 2: Chat API Stream Usage Data (Frontend)
+## [x] Task 2: Chat API Stream Usage Data (Frontend)
 
 ```
 [ ] Update Chat API to Handle Usage Data from Stream
@@ -257,7 +257,7 @@ VERIFICATION:
 
 ---
 
-## Task 4: User Usage Tab Component (Frontend)
+## [x] Task 4: User Usage Tab Component (Frontend)
 
 ```
 [ ] Create User Usage Tab in Profile Page
@@ -389,7 +389,7 @@ VERIFICATION:
 
 ---
 
-## Task 5: Backend - User Usage API Endpoint
+## [x] Task 5: Backend - User Usage API Endpoint
 
 ```
 [ ] Create GET /api/profile/usage Endpoint
