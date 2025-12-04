@@ -10,11 +10,13 @@ export interface BillingPlan {
 	name: string;
 	display_name: string;
 	description: string | null;
-	plan_type: 'free' | 'pro' | 'enterprise';
+	plan_type: 'free' | 'starter' | 'pro' | 'business' | 'enterprise';
 	price_monthly: number;
 	price_yearly: number | null;
 	currency: string;
 	tokens_per_month: number;
+	requests_per_month: number;
+	credits_per_month: number;
 	requests_per_minute: number;
 	requests_per_day: number;
 	max_documents: number;
@@ -75,7 +77,7 @@ export interface UserSubscription {
 	plan_id: string;
 	plan_name: string;
 	plan_display_name: string;
-	plan_type: 'free' | 'pro' | 'enterprise';
+	plan_type: 'free' | 'starter' | 'pro' | 'business' | 'enterprise';
 	status: 'active' | 'canceled' | 'past_due' | 'trialing' | 'paused' | 'expired';
 	billing_interval: 'monthly' | 'yearly';
 	price: number;

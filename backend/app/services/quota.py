@@ -28,6 +28,8 @@ logger = logging.getLogger(__name__)
 # Default limits for users without active subscription (free tier fallback)
 DEFAULT_LIMITS = {
     "tokens_per_month": 10000,
+    "requests_per_month": 100,
+    "credits_per_month": 100,
     "requests_per_minute": 5,
     "requests_per_day": 100,
     "max_documents": 5,
@@ -60,6 +62,8 @@ class UserQuota:
     plan_name: str
     plan_type: str
     tokens: QuotaStatus
+    requests: QuotaStatus
+    credits: QuotaStatus
     documents: QuotaStatus
     projects: QuotaStatus
     has_active_subscription: bool
@@ -79,6 +83,24 @@ class UserQuota:
                 "is_exceeded": self.tokens.is_exceeded,
                 "is_warning": self.tokens.is_warning,
                 "is_unlimited": self.tokens.is_unlimited,
+            },
+            "requests": {
+                "limit": self.requests.limit,
+                "used": self.requests.used,
+                "remaining": self.requests.remaining,
+                "percentage": self.requests.percentage,
+                "is_exceeded": self.requests.is_exceeded,
+                "is_warning": self.requests.is_warning,
+                "is_unlimited": self.requests.is_unlimited,
+            },
+            "credits": {
+                "limit": self.credits.limit,
+                "used": self.credits.used,
+                "remaining": self.credits.remaining,
+                "percentage": self.credits.percentage,
+                "is_exceeded": self.credits.is_exceeded,
+                "is_warning": self.credits.is_warning,
+                "is_unlimited": self.credits.is_unlimited,
             },
             "documents": {
                 "limit": self.documents.limit,
@@ -220,8 +242,10 @@ async def get_user_quota(db: AsyncSession, user_id: uuid.UUID) -> UserQuota:
     """
     Get complete quota information for a user.
 
-    Returns quota status for tokens, documents, and projects.
+    Returns quota status for tokens, requests, credits, documents, and projects.
     """
+    from app.services.usage import get_current_period, get_or_create_usage_summary
+
     user, subscription, plan = await get_user_with_subscription(db, user_id)
 
     if not user:
@@ -230,6 +254,8 @@ async def get_user_quota(db: AsyncSession, user_id: uuid.UUID) -> UserQuota:
     # Determine limits from plan or use defaults
     if plan:
         tokens_limit = plan.tokens_per_month
+        requests_limit = plan.requests_per_month
+        credits_limit = plan.credits_per_month
         documents_limit = plan.max_documents
         projects_limit = plan.max_projects
         plan_name = plan.display_name
@@ -238,16 +264,25 @@ async def get_user_quota(db: AsyncSession, user_id: uuid.UUID) -> UserQuota:
         # Enterprise has unlimited (-1)
         if plan.plan_type == PlanType.ENTERPRISE:
             tokens_limit = -1
+            requests_limit = -1
+            credits_limit = -1
     else:
         # Fallback to default limits
         tokens_limit = DEFAULT_LIMITS["tokens_per_month"]
+        requests_limit = DEFAULT_LIMITS["requests_per_month"]
+        credits_limit = DEFAULT_LIMITS["credits_per_month"]
         documents_limit = DEFAULT_LIMITS["max_documents"]
         projects_limit = DEFAULT_LIMITS["max_projects"]
         plan_name = "Free"
         plan_type = "free"
 
-    # Get current usage
-    tokens_used = await get_tokens_used_this_month(db, user_id)
+    # Get current usage from usage summary (fast query)
+    usage_summary = await get_or_create_usage_summary(db, user_id, get_current_period())
+    tokens_used = usage_summary.total_tokens
+    requests_used = usage_summary.total_requests
+    credits_used = usage_summary.total_credits
+
+    # Get resource counts
     documents_used = await get_document_count(db, user_id)
     projects_used = await get_project_count(db, user_id)
 
@@ -257,6 +292,8 @@ async def get_user_quota(db: AsyncSession, user_id: uuid.UUID) -> UserQuota:
         plan_type=plan_type,
         has_active_subscription=subscription is not None,
         tokens=_calculate_quota_status(tokens_limit, tokens_used),
+        requests=_calculate_quota_status(requests_limit, requests_used),
+        credits=_calculate_quota_status(credits_limit, credits_used),
         documents=_calculate_quota_status(documents_limit, documents_used),
         projects=_calculate_quota_status(projects_limit, projects_used),
     )
@@ -283,6 +320,89 @@ async def check_token_quota(
             f"{quota.tokens.limit:,} tokens this month. "
             "Please upgrade your plan or wait until next month."
         )
+
+    return True, None
+
+
+@traced()
+async def check_request_quota(
+    db: AsyncSession, user_id: uuid.UUID
+) -> tuple[bool, str | None]:
+    """
+    Check if user can make more requests.
+
+    Returns:
+        Tuple of (is_allowed, error_message)
+    """
+    quota = await get_user_quota(db, user_id)
+
+    if quota.requests.is_unlimited:
+        return True, None
+
+    if quota.requests.is_exceeded:
+        return False, (
+            f"Request quota exceeded. Used {quota.requests.used:,} of "
+            f"{quota.requests.limit:,} requests this month. "
+            "Please upgrade your plan or wait until next month."
+        )
+
+    return True, None
+
+
+@traced()
+async def check_credit_quota(
+    db: AsyncSession, user_id: uuid.UUID, credits_needed: int = 1
+) -> tuple[bool, str | None]:
+    """
+    Check if user has enough credits for a request.
+
+    Args:
+        db: Database session
+        user_id: User ID
+        credits_needed: Number of credits needed for this request
+
+    Returns:
+        Tuple of (is_allowed, error_message)
+    """
+    quota = await get_user_quota(db, user_id)
+
+    if quota.credits.is_unlimited:
+        return True, None
+
+    if quota.credits.remaining < credits_needed:
+        return False, (
+            f"Credit quota exceeded. You have {quota.credits.remaining:,} credits remaining, "
+            f"but this request requires {credits_needed} credits. "
+            "Please upgrade your plan or wait until next month."
+        )
+
+    return True, None
+
+
+@traced()
+async def check_all_quotas(
+    db: AsyncSession, user_id: uuid.UUID, credits_needed: int = 1
+) -> tuple[bool, str | None]:
+    """
+    Check all quotas (requests and credits) before making a request.
+
+    Args:
+        db: Database session
+        user_id: User ID
+        credits_needed: Number of credits needed for this request
+
+    Returns:
+        Tuple of (is_allowed, error_message)
+    """
+    # Check request quota
+    allowed, error = await check_request_quota(db, user_id)
+    if not allowed:
+        return False, error
+
+    # Check credit quota
+    allowed, error = await check_credit_quota(db, user_id, credits_needed)
+    if not allowed:
+        return False, error
 
     return True, None
 
@@ -360,7 +480,7 @@ async def check_and_notify_quota(
     Args:
         db: Database session
         user_id: User ID to check
-        quota_type: Type of quota to check (tokens, documents, projects)
+        quota_type: Type of quota to check (tokens, requests, credits, documents, projects)
     """
     from app.services import notification as notification_service
 
@@ -370,6 +490,10 @@ async def check_and_notify_quota(
         # Get the appropriate quota status
         if quota_type == "tokens":
             status = quota.tokens
+        elif quota_type == "requests":
+            status = quota.requests
+        elif quota_type == "credits":
+            status = quota.credits
         elif quota_type == "documents":
             status = quota.documents
         elif quota_type == "projects":

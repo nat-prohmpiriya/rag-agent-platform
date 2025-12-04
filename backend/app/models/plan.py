@@ -15,7 +15,9 @@ class PlanType(str, enum.Enum):
     """Plan type enumeration."""
 
     FREE = "free"
+    STARTER = "starter"
     PRO = "pro"
+    BUSINESS = "business"
     ENTERPRISE = "enterprise"
 
 
@@ -52,6 +54,8 @@ class Plan(Base, TimestampMixin):
 
     # Usage Limits
     tokens_per_month: Mapped[int] = mapped_column(Integer, default=100000, nullable=False)
+    requests_per_month: Mapped[int] = mapped_column(Integer, default=100, nullable=False)
+    credits_per_month: Mapped[int] = mapped_column(Integer, default=100, nullable=False)
     requests_per_minute: Mapped[int] = mapped_column(Integer, default=10, nullable=False)
     requests_per_day: Mapped[int] = mapped_column(Integer, default=1000, nullable=False)
     max_documents: Mapped[int] = mapped_column(Integer, default=10, nullable=False)

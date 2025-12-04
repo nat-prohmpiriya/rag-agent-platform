@@ -14,6 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.agents.engine import AgentEngine
 from app.core.context import get_context
 from app.core.dependencies import get_current_user, get_db, require_token_quota
+from app.models.usage import RequestType
 from app.models.user import User
 from app.providers.llm import ChatMessage as LLMChatMessage
 from app.providers.llm import llm_client
@@ -26,13 +27,72 @@ from app.schemas.chat import (
     SourceInfo,
     UsageInfo,
 )
+from app.schemas.usage import UsageRecordCreate, get_credits_for_model
 from app.services import agent as agent_service
 from app.services import conversation as conversation_service
 from app.services import rag as rag_service
+from app.services import usage as usage_service
 from app.services.models import fetch_models_from_litellm
+from app.services.quota import check_all_quotas
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/chat", tags=["chat"])
+
+
+async def record_chat_usage(
+    db: AsyncSession,
+    user_id: uuid.UUID,
+    model: str,
+    usage: dict[str, int] | None,
+    request_type: RequestType,
+    conversation_id: uuid.UUID | None = None,
+    message_id: uuid.UUID | None = None,
+    agent_id: uuid.UUID | None = None,
+    latency_ms: int | None = None,
+) -> None:
+    """
+    Record usage after a chat request completes.
+
+    Args:
+        db: Database session
+        user_id: User ID
+        model: Model used
+        usage: Usage info from LLM response
+        request_type: Type of request (chat, rag, agent)
+        conversation_id: Optional conversation ID
+        message_id: Optional message ID
+        agent_id: Optional agent ID
+        latency_ms: Optional latency in milliseconds
+    """
+    try:
+        tokens_input = usage.get("prompt_tokens", 0) if usage else 0
+        tokens_output = usage.get("completion_tokens", 0) if usage else 0
+        tokens_total = usage.get("total_tokens", 0) if usage else 0
+
+        # Calculate credits based on model
+        credits = get_credits_for_model(model)
+
+        # Create usage record
+        record = UsageRecordCreate(
+            request_type=request_type,
+            model=model,
+            tokens_input=tokens_input,
+            tokens_output=tokens_output,
+            tokens_total=tokens_total,
+            cost=0.0,  # Cost is calculated by LiteLLM, we can sync later
+            credits_used=credits,
+            latency_ms=latency_ms,
+            conversation_id=conversation_id,
+            message_id=message_id,
+            agent_id=agent_id,
+        )
+
+        await usage_service.record_usage(db, user_id, record)
+        logger.debug(f"Recorded usage for user {user_id}: model={model}, tokens={tokens_total}, credits={credits}")
+
+    except Exception as e:
+        # Don't fail the request if usage recording fails
+        logger.error(f"Failed to record usage: {e}")
 
 
 class ModelInfo(BaseModel):
@@ -205,6 +265,13 @@ async def chat(
                 user_id=current_user.id,
             )
 
+            # Check quota before making agent call
+            agent_model = data.model or llm_client.default_model
+            credits_needed = get_credits_for_model(agent_model)
+            allowed, error_msg = await check_all_quotas(db, current_user.id, credits_needed)
+            if not allowed:
+                raise HTTPException(status_code=429, detail=error_msg)
+
             if user_agent:
                 # User agent from DB - pass config to engine
                 engine = AgentEngine(
@@ -222,11 +289,13 @@ async def chat(
                     raise HTTPException(status_code=404, detail=str(e))
 
             # Process with agent
+            start_time = time.time()
             agent_response = await engine.process(
                 messages=messages,
                 db=db,
                 user_id=current_user.id,
             )
+            latency_ms = int((time.time() - start_time) * 1000)
 
             # Save assistant message to DB
             tokens_used = agent_response.usage.get("total_tokens") if agent_response.usage else None
@@ -236,6 +305,18 @@ async def chat(
                 role="assistant",
                 content=agent_response.content,
                 tokens_used=tokens_used,
+            )
+
+            # Record usage for agent
+            await record_chat_usage(
+                db=db,
+                user_id=current_user.id,
+                model=agent_response.model,
+                usage=agent_response.usage,
+                request_type=RequestType.AGENT,
+                conversation_id=conversation_id,
+                agent_id=user_agent.id if user_agent else None,
+                latency_ms=latency_ms,
             )
 
             # Build sources from agent response
@@ -311,7 +392,15 @@ async def chat(
                     for info in rag_service.format_sources(chunks, doc_names)
                 ]
 
+        # Check quota before making LLM call
+        model_to_use = data.model or llm_client.default_model
+        credits_needed = get_credits_for_model(model_to_use)
+        allowed, error_msg = await check_all_quotas(db, current_user.id, credits_needed)
+        if not allowed:
+            raise HTTPException(status_code=429, detail=error_msg)
+
         # Call LLM with user_id for usage tracking
+        start_time = time.time()
         response = await llm_client.chat_completion(
             messages=messages,
             model=data.model,
@@ -322,6 +411,7 @@ async def chat(
             presence_penalty=data.presence_penalty,
             user=str(current_user.id),
         )
+        latency_ms = int((time.time() - start_time) * 1000)
 
         # Save assistant message to DB
         tokens_used = response.usage.get("total_tokens") if response.usage else None
@@ -331,6 +421,18 @@ async def chat(
             role="assistant",
             content=response.content,
             tokens_used=tokens_used,
+        )
+
+        # Record usage
+        request_type = RequestType.RAG if data.use_rag else RequestType.CHAT
+        await record_chat_usage(
+            db=db,
+            user_id=current_user.id,
+            model=response.model,
+            usage=response.usage,
+            request_type=request_type,
+            conversation_id=conversation_id,
+            latency_ms=latency_ms,
         )
 
         # Build response

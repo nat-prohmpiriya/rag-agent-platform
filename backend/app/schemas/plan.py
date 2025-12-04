@@ -23,6 +23,8 @@ class PlanCreate(BaseModel):
 
     # Limits
     tokens_per_month: int = Field(100000, ge=0)
+    requests_per_month: int = Field(100, ge=0)
+    credits_per_month: int = Field(100, ge=0)
     requests_per_minute: int = Field(10, ge=1)
     requests_per_day: int = Field(1000, ge=1)
     max_documents: int = Field(10, ge=0)
@@ -60,6 +62,8 @@ class PlanUpdate(BaseModel):
 
     # Limits
     tokens_per_month: int | None = Field(None, ge=0)
+    requests_per_month: int | None = Field(None, ge=0)
+    credits_per_month: int | None = Field(None, ge=0)
     requests_per_minute: int | None = Field(None, ge=1)
     requests_per_day: int | None = Field(None, ge=1)
     max_documents: int | None = Field(None, ge=0)
@@ -98,6 +102,8 @@ class PlanResponse(BaseModel):
 
     # Limits
     tokens_per_month: int
+    requests_per_month: int
+    credits_per_month: int
     requests_per_minute: int
     requests_per_day: int
     max_documents: int

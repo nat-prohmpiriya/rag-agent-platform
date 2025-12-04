@@ -21,6 +21,7 @@ from app.models.notification import (
     NotificationPriority,
 )
 from app.models.notification_preference import NotificationPreference
+from app.models.usage import UsageRecord, UsageSummary, RequestType
 
 __all__ = [
     "TimestampMixin",
@@ -53,4 +54,7 @@ __all__ = [
     "NotificationCategory",
     "NotificationPriority",
     "NotificationPreference",
+    "UsageRecord",
+    "UsageSummary",
+    "RequestType",
 ]

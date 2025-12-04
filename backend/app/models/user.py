@@ -58,6 +58,14 @@ class User(Base, TimestampMixin):
         back_populates="user",
         cascade="all, delete-orphan",
     )
+    usage_records: Mapped[list["UsageRecord"]] = relationship(
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+    usage_summaries: Mapped[list["UsageSummary"]] = relationship(
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
 
     def __repr__(self) -> str:
         return f"<User(id={self.id}, email={self.email})>"
@@ -70,3 +78,4 @@ from app.models.document import Document  # noqa: E402, F401
 from app.models.agent import Agent  # noqa: E402, F401
 from app.models.subscription import Subscription  # noqa: E402, F401
 from app.models.invoice import Invoice  # noqa: E402, F401
+from app.models.usage import UsageRecord, UsageSummary  # noqa: E402, F401

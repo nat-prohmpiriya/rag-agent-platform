@@ -65,11 +65,14 @@
 	function getPlanFeatures(plan: BillingPlan): string[] {
 		const features: string[] = [];
 
-		features.push(`${formatNumber(plan.tokens_per_month)} tokens/month`);
+		// Primary metrics: requests/credits
+		features.push(`${formatNumber(plan.requests_per_month)} requests/month`);
+		features.push(`${formatNumber(plan.credits_per_month)} credits/month`);
+
+		// Resources
 		features.push(`${plan.max_agents} AI Agents`);
 		features.push(`${plan.max_documents} Documents`);
 		features.push(`${plan.max_projects} Projects`);
-		features.push(`${plan.requests_per_day.toLocaleString()} requests/day`);
 
 		if (plan.allowed_models.length > 0) {
 			const modelCount = plan.allowed_models.length;
@@ -183,14 +186,14 @@
 
 		<!-- Plans Grid -->
 		{#if loading}
-			<div class="grid gap-8 md:grid-cols-3 max-w-5xl mx-auto">
-				{#each Array(3) as _}
-					<div class="p-8 rounded-2xl border border-white/10 bg-white/[0.02]">
+			<div class="grid gap-6 md:grid-cols-2 lg:grid-cols-4 max-w-7xl mx-auto">
+				{#each Array(4) as _}
+					<div class="p-6 rounded-2xl border border-white/10 bg-white/[0.02]">
 						<Skeleton class="h-6 w-24 mb-4" />
 						<Skeleton class="h-10 w-32 mb-2" />
 						<Skeleton class="h-4 w-48 mb-6" />
 						<div class="space-y-3 mb-8">
-							{#each Array(5) as _}
+							{#each Array(6) as _}
 								<Skeleton class="h-4 w-full" />
 							{/each}
 						</div>
@@ -210,12 +213,12 @@
 				<p class="text-gray-400">No plans available at the moment.</p>
 			</div>
 		{:else}
-			<div class="grid gap-8 md:grid-cols-3 max-w-5xl mx-auto">
+			<div class="grid gap-6 md:grid-cols-2 lg:grid-cols-4 max-w-7xl mx-auto">
 				{#each plans as plan (plan.id)}
 					<div
-						class="relative p-8 rounded-2xl border transition-all duration-300
+						class="relative p-6 rounded-2xl border transition-all duration-300
 							{isPopular(plan)
-								? 'border-indigo-500/50 bg-gradient-to-b from-indigo-500/10 to-transparent scale-105'
+								? 'border-indigo-500/50 bg-gradient-to-b from-indigo-500/10 to-transparent lg:scale-105'
 								: 'border-white/10 bg-white/[0.02] hover:bg-white/[0.04] hover:border-white/20'}"
 					>
 						{#if isPopular(plan)}
@@ -228,8 +231,8 @@
 						{/if}
 
 						<!-- Plan Header -->
-						<div class="mb-6">
-							<h3 class="text-xl font-semibold text-white mb-2">{plan.display_name}</h3>
+						<div class="mb-4">
+							<h3 class="text-lg font-semibold text-white mb-2">{plan.display_name}</h3>
 							<div class="flex items-baseline gap-1">
 								{#if plan.plan_type === 'enterprise'}
 									<span class="text-4xl font-bold text-white">Custom</span>
@@ -250,10 +253,10 @@
 						</div>
 
 						<!-- Features -->
-						<ul class="space-y-3 mb-8">
+						<ul class="space-y-2 mb-6">
 							{#each getPlanFeatures(plan) as feature}
-								<li class="flex items-center gap-3 text-sm text-gray-300">
-									<Check class="h-4 w-4 text-indigo-400 flex-shrink-0" />
+								<li class="flex items-center gap-2 text-sm text-gray-300">
+									<Check class="h-3.5 w-3.5 text-indigo-400 flex-shrink-0" />
 									{feature}
 								</li>
 							{/each}
@@ -261,17 +264,17 @@
 
 						<!-- Models Badge -->
 						{#if plan.allowed_models.length > 0}
-							<div class="mb-6 pb-6 border-b border-white/10">
+							<div class="mb-4 pb-4 border-b border-white/10">
 								<p class="text-xs text-gray-500 mb-2">Available Models</p>
 								<div class="flex flex-wrap gap-1">
-									{#each plan.allowed_models.slice(0, 4) as model}
+									{#each plan.allowed_models.slice(0, 3) as model}
 										<Badge variant="outline" class="text-xs border-white/20 text-gray-400">
 											{model.split('/').pop()}
 										</Badge>
 									{/each}
-									{#if plan.allowed_models.length > 4}
+									{#if plan.allowed_models.length > 3}
 										<Badge variant="outline" class="text-xs border-white/20 text-gray-400">
-											+{plan.allowed_models.length - 4} more
+											+{plan.allowed_models.length - 3} more
 										</Badge>
 									{/if}
 								</div>
