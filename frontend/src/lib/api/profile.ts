@@ -19,6 +19,20 @@ export interface UserStats {
 	total_messages: number;
 }
 
+export interface UserUsage {
+	total_tokens: number;
+	total_messages: number;
+	tokens_this_month: number;
+	messages_this_month: number;
+	estimated_cost: number;
+	cost_this_month: number;
+	quota?: {
+		tokens_limit: number;
+		tokens_used: number;
+		percentage: number;
+	};
+}
+
 export interface UserUpdate {
 	username?: string;
 	first_name?: string;
@@ -83,5 +97,12 @@ export const profileApi = {
 	 */
 	getStats: async (): Promise<UserStats> => {
 		return fetchApi<UserStats>('/api/profile/stats');
+	},
+
+	/**
+	 * Get current user's usage data (tokens, cost, quota)
+	 */
+	getUsage: async (): Promise<UserUsage> => {
+		return fetchApi<UserUsage>('/api/profile/usage');
 	},
 };

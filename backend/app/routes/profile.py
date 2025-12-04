@@ -1,5 +1,7 @@
+from datetime import datetime
+
 from fastapi import APIRouter, Depends
-from sqlalchemy import func, select
+from sqlalchemy import and_, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.context import get_context
@@ -11,7 +13,7 @@ from app.models.document import Document
 from app.models.message import Message
 from app.models.user import User
 from app.schemas.base import BaseResponse, MessageResponse
-from app.schemas.stats import UserStatsResponse
+from app.schemas.stats import UsageQuota, UserStatsResponse, UserUsageResponse
 from app.schemas.user import (
     ChangePasswordRequest,
     DeleteAccountRequest,
@@ -19,6 +21,17 @@ from app.schemas.user import (
     UserUpdate,
 )
 from app.services.auth import change_password, delete_account
+
+# Token limits by tier
+TIER_LIMITS: dict[str, int | None] = {
+    "free": 50000,
+    "basic": 200000,
+    "pro": 1000000,
+    "enterprise": None,  # unlimited
+}
+
+# Average cost per million tokens (simplified)
+COST_PER_1M_TOKENS = 0.50
 
 router = APIRouter(prefix="/profile", tags=["profile"])
 
@@ -153,5 +166,93 @@ async def get_user_stats(
             documents_count=documents_count,
             agents_count=agents_count,
             total_messages=total_messages,
+        ),
+    )
+
+
+@router.get("/usage")
+async def get_usage(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> BaseResponse[UserUsageResponse]:
+    """Get user's token usage statistics."""
+    ctx = get_context()
+
+    # Get current month start
+    now = datetime.utcnow()
+    month_start = datetime(now.year, now.month, 1)
+
+    # Get user's conversation IDs
+    conv_stmt = select(Conversation.id).where(Conversation.user_id == current_user.id)
+    conv_result = await db.execute(conv_stmt)
+    conv_ids = [row[0] for row in conv_result.all()]
+
+    if not conv_ids:
+        # No conversations, return zeros
+        return BaseResponse(
+            trace_id=ctx.trace_id,
+            data=UserUsageResponse(
+                total_tokens=0,
+                total_messages=0,
+                tokens_this_month=0,
+                messages_this_month=0,
+                estimated_cost=0.0,
+                cost_this_month=0.0,
+                quota=None,
+            ),
+        )
+
+    # Total tokens and messages (all time)
+    total_stmt = select(
+        func.coalesce(func.sum(Message.tokens_used), 0).label("total_tokens"),
+        func.count(Message.id).label("total_messages"),
+    ).where(Message.conversation_id.in_(conv_ids))
+
+    total_result = await db.execute(total_stmt)
+    total_row = total_result.one()
+    total_tokens = int(total_row.total_tokens)
+    total_messages = int(total_row.total_messages)
+
+    # This month tokens and messages
+    month_stmt = select(
+        func.coalesce(func.sum(Message.tokens_used), 0).label("tokens"),
+        func.count(Message.id).label("messages"),
+    ).where(
+        and_(
+            Message.conversation_id.in_(conv_ids),
+            Message.created_at >= month_start,
+        )
+    )
+
+    month_result = await db.execute(month_stmt)
+    month_row = month_result.one()
+    tokens_this_month = int(month_row.tokens)
+    messages_this_month = int(month_row.messages)
+
+    # Calculate costs
+    estimated_cost = (total_tokens / 1_000_000) * COST_PER_1M_TOKENS
+    cost_this_month = (tokens_this_month / 1_000_000) * COST_PER_1M_TOKENS
+
+    # Get quota based on tier
+    quota = None
+    tier_limit = TIER_LIMITS.get(current_user.tier)
+    if tier_limit:
+        percentage = min(100, int((tokens_this_month / tier_limit) * 100))
+        quota = UsageQuota(
+            tokens_limit=tier_limit,
+            tokens_used=tokens_this_month,
+            percentage=percentage,
+        )
+
+    return BaseResponse(
+        trace_id=ctx.trace_id,
+        data=UserUsageResponse(
+            total_tokens=total_tokens,
+            total_messages=total_messages,
+            tokens_this_month=tokens_this_month,
+            messages_this_month=messages_this_month,
+            estimated_cost=round(estimated_cost, 2),
+            cost_this_month=round(cost_this_month, 2),
+            quota=quota,
         ),
     )
