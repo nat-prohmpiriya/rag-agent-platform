@@ -61,7 +61,7 @@
             {openIndex === index ? 'bg-white/[0.04] border-white/20' : ''}"
         >
           <button
-            class="w-full px-6 py-5 flex items-center justify-between text-left"
+            class="w-full px-6 py-5 flex items-center justify-between text-left cursor-pointer"
             onclick={() => toggleFaq(index)}
           >
             <span class="font-medium text-white pr-4">{faq.question}</span>
