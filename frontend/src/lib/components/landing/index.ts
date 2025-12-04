@@ -1,0 +1,9 @@
+export { default as Navbar } from './Navbar.svelte';
+export { default as Hero } from './Hero.svelte';
+export { default as Features } from './Features.svelte';
+export { default as HowItWorks } from './HowItWorks.svelte';
+export { default as Pricing } from './Pricing.svelte';
+export { default as TechStack } from './TechStack.svelte';
+export { default as FAQ } from './FAQ.svelte';
+export { default as FinalCTA } from './FinalCTA.svelte';
+export { default as Footer } from './Footer.svelte';
