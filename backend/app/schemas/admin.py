@@ -352,3 +352,91 @@ class UsageAnalyticsResponse(BaseModel):
     by_model: list[ModelUsage]
     by_date: list[DailyUsageData]
     by_plan: list[PlanUsage] = []
+
+
+# System Health schemas
+class ServiceStatus(str, Enum):
+    """Service health status."""
+
+    HEALTHY = "healthy"
+    DEGRADED = "degraded"
+    UNHEALTHY = "unhealthy"
+    UNKNOWN = "unknown"
+
+
+class LiteLLMHealth(BaseModel):
+    """LiteLLM Proxy health status."""
+
+    status: ServiceStatus
+    url: str
+    response_time_ms: float | None = None
+    models_available: int = 0
+    error: str | None = None
+
+
+class PostgreSQLHealth(BaseModel):
+    """PostgreSQL database health status."""
+
+    status: ServiceStatus
+    host: str
+    active_connections: int = 0
+    max_connections: int = 0
+    database_size_mb: float = 0
+    response_time_ms: float | None = None
+    error: str | None = None
+
+
+class RedisHealth(BaseModel):
+    """Redis health status."""
+
+    status: ServiceStatus
+    host: str
+    port: int
+    used_memory_mb: float = 0
+    max_memory_mb: float = 0
+    connected_clients: int = 0
+    hit_rate: float = 0
+    response_time_ms: float | None = None
+    error: str | None = None
+
+
+class SystemHealthResponse(BaseModel):
+    """Complete system health status."""
+
+    overall_status: ServiceStatus
+    timestamp: datetime
+    litellm: LiteLLMHealth
+    postgresql: PostgreSQLHealth
+    redis: RedisHealth
+
+
+class AlertThreshold(BaseModel):
+    """Alert threshold configuration."""
+
+    name: str
+    description: str
+    current_value: float | None = None
+    warning_threshold: float
+    critical_threshold: float
+    unit: str
+    enabled: bool = True
+
+
+class AlertConfig(BaseModel):
+    """Alert configuration."""
+
+    latency_warning_ms: float = 500
+    latency_critical_ms: float = 2000
+    error_rate_warning_percent: float = 1.0
+    error_rate_critical_percent: float = 5.0
+    notification_channels: list[str] = []
+
+
+class SystemMetrics(BaseModel):
+    """System performance metrics."""
+
+    requests_per_second: float = 0
+    avg_response_time_ms: float = 0
+    error_rate_percent: float = 0
+    active_users: int = 0
+    uptime_seconds: float = 0

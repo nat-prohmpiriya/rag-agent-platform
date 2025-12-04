@@ -509,3 +509,61 @@ export interface UsageAnalytics {
 export async function getUsageAnalytics(days: number = 30): Promise<UsageAnalytics> {
 	return fetchApi<UsageAnalytics>(`/api/admin/usage?days=${days}`);
 }
+
+// System Health Types
+export type ServiceStatus = 'healthy' | 'degraded' | 'unhealthy' | 'unknown';
+
+export interface LiteLLMHealth {
+	status: ServiceStatus;
+	url: string;
+	response_time_ms: number | null;
+	models_available: number;
+	error: string | null;
+}
+
+export interface PostgreSQLHealth {
+	status: ServiceStatus;
+	host: string;
+	active_connections: number;
+	max_connections: number;
+	database_size_mb: number;
+	response_time_ms: number | null;
+	error: string | null;
+}
+
+export interface RedisHealth {
+	status: ServiceStatus;
+	host: string;
+	port: number;
+	used_memory_mb: number;
+	max_memory_mb: number;
+	connected_clients: number;
+	hit_rate: number;
+	response_time_ms: number | null;
+	error: string | null;
+}
+
+export interface SystemHealth {
+	overall_status: ServiceStatus;
+	timestamp: string;
+	litellm: LiteLLMHealth;
+	postgresql: PostgreSQLHealth;
+	redis: RedisHealth;
+}
+
+export interface SystemMetrics {
+	requests_per_second: number;
+	avg_response_time_ms: number;
+	error_rate_percent: number;
+	active_users: number;
+	uptime_seconds: number;
+}
+
+// System Health API Functions
+export async function getSystemHealth(): Promise<SystemHealth> {
+	return fetchApi<SystemHealth>('/api/admin/system/health');
+}
+
+export async function getSystemMetrics(): Promise<SystemMetrics> {
+	return fetchApi<SystemMetrics>('/api/admin/system/metrics');
+}
