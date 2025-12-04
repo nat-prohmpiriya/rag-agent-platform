@@ -147,3 +147,93 @@ async def get_request_metadata(request=None) -> RequestMetadata:
     user_agent = request.headers.get("user-agent")
 
     return RequestMetadata(ip_address=ip_address, user_agent=user_agent)
+
+
+# Quota enforcement dependencies
+
+
+async def require_token_quota(
+    current_user=Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Dependency to check token quota before processing chat requests.
+
+    Raises:
+        HTTPException 429: If token quota is exceeded
+    """
+    from fastapi import HTTPException
+
+    from app.services.quota import check_token_quota
+
+    is_allowed, error_message = await check_token_quota(db, current_user.id)
+
+    if not is_allowed:
+        raise HTTPException(
+            status_code=429,
+            detail={
+                "error": "quota_exceeded",
+                "quota_type": "tokens",
+                "message": error_message,
+            },
+        )
+
+    return current_user
+
+
+async def require_document_quota(
+    current_user=Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Dependency to check document quota before uploading.
+
+    Raises:
+        HTTPException 429: If document quota is exceeded
+    """
+    from fastapi import HTTPException
+
+    from app.services.quota import check_document_quota
+
+    is_allowed, error_message = await check_document_quota(db, current_user.id)
+
+    if not is_allowed:
+        raise HTTPException(
+            status_code=429,
+            detail={
+                "error": "quota_exceeded",
+                "quota_type": "documents",
+                "message": error_message,
+            },
+        )
+
+    return current_user
+
+
+async def require_project_quota(
+    current_user=Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Dependency to check project quota before creating.
+
+    Raises:
+        HTTPException 429: If project quota is exceeded
+    """
+    from fastapi import HTTPException
+
+    from app.services.quota import check_project_quota
+
+    is_allowed, error_message = await check_project_quota(db, current_user.id)
+
+    if not is_allowed:
+        raise HTTPException(
+            status_code=429,
+            detail={
+                "error": "quota_exceeded",
+                "quota_type": "projects",
+                "message": error_message,
+            },
+        )
+
+    return current_user

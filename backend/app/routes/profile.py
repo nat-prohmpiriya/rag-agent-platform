@@ -13,7 +13,13 @@ from app.models.document import Document
 from app.models.message import Message
 from app.models.user import User
 from app.schemas.base import BaseResponse, MessageResponse
-from app.schemas.stats import UsageQuota, UserStatsResponse, UserUsageResponse
+from app.schemas.stats import (
+    QuotaStatusResponse,
+    UsageQuota,
+    UserQuotaResponse,
+    UserStatsResponse,
+    UserUsageResponse,
+)
 from app.schemas.user import (
     ChangePasswordRequest,
     DeleteAccountRequest,
@@ -21,6 +27,7 @@ from app.schemas.user import (
     UserUpdate,
 )
 from app.services.auth import change_password, delete_account
+from app.services.quota import get_user_quota
 
 # Token limits by tier
 TIER_LIMITS: dict[str, int | None] = {
@@ -254,5 +261,56 @@ async def get_usage(
             estimated_cost=round(estimated_cost, 2),
             cost_this_month=round(cost_this_month, 2),
             quota=quota,
+        ),
+    )
+
+
+@router.get("/quota")
+async def get_quota(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> BaseResponse[UserQuotaResponse]:
+    """
+    Get user's quota status for all resources.
+
+    Returns current usage vs limits for tokens, documents, and projects.
+    Includes warning (80%+) and exceeded (100%+) flags.
+    """
+    ctx = get_context()
+
+    user_quota = await get_user_quota(db, current_user.id)
+
+    return BaseResponse(
+        trace_id=ctx.trace_id,
+        data=UserQuotaResponse(
+            user_id=str(user_quota.user_id),
+            plan_name=user_quota.plan_name,
+            plan_type=user_quota.plan_type,
+            has_active_subscription=user_quota.has_active_subscription,
+            tokens=QuotaStatusResponse(
+                limit=user_quota.tokens.limit,
+                used=user_quota.tokens.used,
+                remaining=user_quota.tokens.remaining,
+                percentage=user_quota.tokens.percentage,
+                is_exceeded=user_quota.tokens.is_exceeded,
+                is_warning=user_quota.tokens.is_warning,
+                is_unlimited=user_quota.tokens.is_unlimited,
+            ),
+            documents=QuotaStatusResponse(
+                limit=user_quota.documents.limit,
+                used=user_quota.documents.used,
+                remaining=user_quota.documents.remaining,
+                percentage=user_quota.documents.percentage,
+                is_exceeded=user_quota.documents.is_exceeded,
+                is_warning=user_quota.documents.is_warning,
+            ),
+            projects=QuotaStatusResponse(
+                limit=user_quota.projects.limit,
+                used=user_quota.projects.used,
+                remaining=user_quota.projects.remaining,
+                percentage=user_quota.projects.percentage,
+                is_exceeded=user_quota.projects.is_exceeded,
+                is_warning=user_quota.projects.is_warning,
+            ),
         ),
     )

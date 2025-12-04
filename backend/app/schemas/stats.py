@@ -30,3 +30,27 @@ class UserUsageResponse(BaseModel):
     estimated_cost: float
     cost_this_month: float
     quota: UsageQuota | None = None
+
+
+class QuotaStatusResponse(BaseModel):
+    """Single quota status."""
+
+    limit: int
+    used: int
+    remaining: int
+    percentage: float
+    is_exceeded: bool
+    is_warning: bool
+    is_unlimited: bool = False
+
+
+class UserQuotaResponse(BaseModel):
+    """Complete quota information for user."""
+
+    user_id: str
+    plan_name: str
+    plan_type: str
+    has_active_subscription: bool
+    tokens: QuotaStatusResponse
+    documents: QuotaStatusResponse
+    projects: QuotaStatusResponse

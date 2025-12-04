@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.context import get_context
-from app.core.dependencies import get_current_user, get_db
+from app.core.dependencies import get_current_user, get_db, require_project_quota
 from app.models.user import User
 from app.schemas.base import BaseResponse, MessageResponse
 from app.schemas.document import DocumentResponse
@@ -28,9 +28,9 @@ router = APIRouter(prefix="/projects", tags=["projects"])
 async def create_project(
     data: ProjectCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_project_quota),
 ) -> BaseResponse[ProjectResponse]:
-    """Create a new project."""
+    """Create a new project. Returns 429 if project quota is exceeded."""
     ctx = get_context()
 
     project = await project_service.create_project(

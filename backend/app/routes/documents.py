@@ -7,7 +7,7 @@ from fastapi.responses import Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.context import get_context
-from app.core.dependencies import get_current_user, get_db
+from app.core.dependencies import get_current_user, get_db, require_document_quota
 from app.models.user import User
 from app.schemas.base import BaseResponse, MessageResponse
 from app.schemas.document import (
@@ -31,13 +31,14 @@ async def upload_document(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_document_quota),
 ) -> BaseResponse[DocumentResponse]:
     """
     Upload a document and start processing.
 
     Supported file types: pdf, docx, txt, md, csv
     Max file size: 50MB
+    Returns 429 if document quota is exceeded.
     """
     ctx = get_context()
 

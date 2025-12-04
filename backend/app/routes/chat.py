@@ -13,7 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.agents.engine import AgentEngine
 from app.core.context import get_context
-from app.core.dependencies import get_current_user, get_db
+from app.core.dependencies import get_current_user, get_db, require_token_quota
 from app.models.user import User
 from app.providers.llm import ChatMessage as LLMChatMessage
 from app.providers.llm import llm_client
@@ -146,7 +146,7 @@ async def build_messages_from_history(
 @router.post("")
 async def chat(
     data: ChatRequest,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_token_quota),
     db: AsyncSession = Depends(get_db),
 ) -> BaseResponse[ChatResponse | AgentChatResponse]:
     """
@@ -156,7 +156,7 @@ async def chat(
     Messages are saved to the database.
     If agent_slug is provided, uses AgentEngine with tools.
 
-    Requires authentication.
+    Requires authentication. Returns 429 if token quota is exceeded.
     """
     ctx = get_context()
     ctx.user_id = current_user.id
@@ -362,7 +362,7 @@ async def chat(
 @router.post("/stream")
 async def chat_stream(
     data: ChatRequest,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_token_quota),
     db: AsyncSession = Depends(get_db),
 ):
     """
@@ -371,7 +371,7 @@ async def chat_stream(
     If conversation_id is not provided, a new conversation will be created.
     Messages are saved to the database.
 
-    Requires authentication.
+    Requires authentication. Returns 429 if token quota is exceeded.
     Returns Server-Sent Events with X-Trace-Id header.
     """
     ctx = get_context()

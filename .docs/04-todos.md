@@ -414,14 +414,14 @@
 - [ ] Calculate cost per user
 - [ ] Store usage history
 
-### 7.2 Limits & Quotas
-- [ ] Implement user tier system (Free/Pro/Enterprise)
-- [ ] Add token quota (monthly)
-- [ ] Add rate limiting (requests/minute)
-- [ ] Add document upload limit
-- [ ] Add project count limit
-- [ ] Implement 80% usage warning
-- [ ] Implement limit reached blocking
+### 7.2 Limits & Quotas ✅ DONE
+- [x] Implement user tier system (Free/Pro/Enterprise) - Plan model + User.tier
+- [x] Add token quota (monthly) - quota service + chat endpoint blocking
+- [x] Add rate limiting (requests/minute) - via LiteLLM key RPM limits
+- [x] Add document upload limit - quota service + document endpoint blocking
+- [x] Add project count limit - quota service + project endpoint blocking
+- [x] Implement 80% usage warning - quota service `is_warning` flag
+- [x] Implement limit reached blocking - 429 response on quota exceeded
 
 ### 7.3 Debug Panel
 - [ ] Create debug panel component (collapsible)
@@ -431,14 +431,18 @@
 - [ ] Display token count
 - [ ] Show cost estimation
 
-### 7.4 Admin Panel
-- [ ] Create admin routes (protected)
-- [ ] Implement user list view
-- [ ] Add user edit (tier, limits)
-- [ ] Add user suspend/ban
-- [ ] Create usage dashboard
-- [ ] Add system metrics view
-- [ ] Create PII audit viewer
+### 7.4 Admin Panel ✅ DONE
+- [x] Create admin routes (protected)
+- [x] Implement user list view
+- [x] Add user edit (tier, limits)
+- [x] Add user suspend/ban
+- [x] Create usage dashboard
+- [x] Add system metrics view
+- [x] Create audit logs viewer
+- [x] Create plans management
+- [x] Create subscriptions management
+- [x] Create settings management
+- [x] Create system health monitoring
 
 ### 7.5 Polish & Optimization
 - [ ] Add comprehensive error handling
