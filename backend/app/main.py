@@ -12,6 +12,7 @@ from app.middleware import TraceContextMiddleware
 from app.routes import (
     agents,
     auth,
+    billing,
     chat,
     conversations,
     documents,
@@ -85,6 +86,7 @@ app.include_router(documents.router, prefix="/api")
 app.include_router(projects.router, prefix="/api")
 app.include_router(agents.router, prefix="/api")
 app.include_router(profile.router, prefix="/api")
+app.include_router(billing.router, prefix="/api")
 
 # Admin routers
 app.include_router(admin_dashboard.router, prefix="/api/admin")
