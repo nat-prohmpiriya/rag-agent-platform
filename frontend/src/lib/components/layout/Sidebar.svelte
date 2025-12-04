@@ -108,39 +108,27 @@
 	<!-- Logo & Platform Name -->
 	{#if !collapsed}
 		<div class="flex items-center gap-2 p-4">
-			<svg class="h-6 w-6 text-primary" viewBox="0 0 24 24" fill="currentColor">
-				<path
-					d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"
-					stroke="currentColor"
-					stroke-width="2"
-					fill="none"
-				/>
-			</svg>
-			<span class="font-semibold">RAG Agent Platform</span>
+			<div class="h-8 w-8 rounded-lg bg-gradient-to-br from-indigo-500 to-cyan-500 flex items-center justify-center">
+				<svg class="h-5 w-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+					<path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+				</svg>
+			</div>
+			<span class="font-semibold">RAG Agent</span>
 		</div>
 	{:else}
 		<div class="flex justify-center p-4">
 			<Tooltip.Root>
 				<Tooltip.Trigger>
 					{#snippet child({ props })}
-						<div {...props}>
-							<svg
-								class="h-6 w-6 text-primary"
-								viewBox="0 0 24 24"
-								fill="currentColor"
-							>
-								<path
-									d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"
-									stroke="currentColor"
-									stroke-width="2"
-									fill="none"
-								/>
+						<div {...props} class="h-8 w-8 rounded-lg bg-gradient-to-br from-indigo-500 to-cyan-500 flex items-center justify-center">
+							<svg class="h-5 w-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+								<path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
 							</svg>
 						</div>
 					{/snippet}
 				</Tooltip.Trigger>
 				<Tooltip.Portal>
-					<Tooltip.Content side="right">RAG Agent Platform</Tooltip.Content>
+					<Tooltip.Content side="right">RAG Agent</Tooltip.Content>
 				</Tooltip.Portal>
 			</Tooltip.Root>
 		</div>
